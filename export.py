@@ -4,6 +4,7 @@ import word
 import config
 import service
 import sys
+import traceback
 
 email = config.auth.get('email')
 password = config.auth.get('password')
@@ -14,6 +15,8 @@ try:
         handler = word.Text(config.sources.get('text'))
     elif export_type == 'kindle':
         handler = word.Kindle(config.sources.get('kindle'))
+    elif export_type == 'input' :
+        handler = word.Input(sys.argv[2:])
     else:
         raise Exception('unsupported type')
 
@@ -27,15 +30,16 @@ try:
         translate = lingualeo.get_translates(word)
 
         lingualeo.add_word(translate["word"], translate["tword"])
-
-        if translate["is_exist"]:
+        print(translate)
+        if not translate["is_exist"]:
             result = "Add word: "
         else:
             result = "Already exists: "
 
         result = result + word
-        print result
+        print (result)
 
 
-except Exception as e:
-    print e.args, e.message
+except Exception:
+    print (sys.exc_info())
+    print(traceback.format_exc())

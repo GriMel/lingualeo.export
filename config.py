@@ -8,6 +8,6 @@ sources = {
 
 # Auth data for Lingualeo
 auth = {
-    'email' : 'email@email',
-    'password' : 'password'
+    'email' : '',
+    'password' : ''
 }

@@ -28,3 +28,7 @@ class Text(Base):
         f = open(self.source)
         self.data = f.readlines()
         f.close()
+        
+class Input(Base):
+    def read(self):
+        self.data = self.source

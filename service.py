@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import urllib
-import urllib2
+import urllib.request as urllib2
 import json
-from cookielib import CookieJar
+from http.cookiejar import CookieJar
 
 
 class Lingualeo:
@@ -25,12 +25,13 @@ class Lingualeo:
         url = "http://api.lingualeo.com/addword"
         values = {
             "word": word,
-            "tword": tword
+            "tword": tword,
+            "context":"Silly"
         }
         self.get_content(url, values)
 
     def get_translates(self, word):
-        url = "http://api.lingualeo.com/gettranslates?word=" + urllib.quote_plus(word)
+        url = "http://api.lingualeo.com/gettranslates?word=" + urllib.parse.quote_plus(word)
 
         try:
             result = self.get_content(url, {})
@@ -44,9 +45,8 @@ class Lingualeo:
             return e.message
 
     def get_content(self, url, values):
-        data = urllib.urlencode(values)
-
+        data = urllib.parse.urlencode(values).encode('utf-8')
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
         req = opener.open(url, data)
 
-        return json.loads(req.read())
+        return json.loads(req.read().decode('utf-8'))
