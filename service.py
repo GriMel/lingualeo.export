@@ -21,12 +21,12 @@ class Lingualeo:
 
         return self.get_content(url, values)
 
-    def add_word(self, word, tword):
+    def add_word(self, word, tword, context):
         url = "http://api.lingualeo.com/addword"
         values = {
             "word": word,
             "tword": tword,
-            "context":"Silly"
+            "context":context
         }
         self.get_content(url, values)
 
