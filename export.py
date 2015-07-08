@@ -6,8 +6,8 @@ from service import Lingualeo
 import sys
 import traceback
 
-email = config.auth.get('email')
-password = config.auth.get('password')
+email = auth.get('email')
+password = auth.get('password')
 
 try:
     export_type = sys.argv[1]
