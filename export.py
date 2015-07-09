@@ -24,20 +24,24 @@ try:
 
     lingualeo = Lingualeo(email, password)
     lingualeo.auth()
-
-    for word, context in handler.get():
-        word = word.lower()
+    exist = 0
+    added = 0
+    for row in handler.get():
+        word = row.get('word').lower()
+        context = row.get('context', '')
         translate = lingualeo.get_translates(word)
 
         lingualeo.add_word(translate["word"], translate["tword"], context)
-        print(translate)
         if not translate["is_exist"]:
-            result = "Add word: "
+            result = "Added word: "
+            added+=1
         else:
             result = "Already exists: "
-
+            exist +=1
         result = result + word
         print (result)
+        
+    print("There were {} words\n{} added, {} exist".format(added+exist, added, exist, ))
 
 
 except Exception:

@@ -9,27 +9,24 @@ class Base(object):
         self.source = source
 
     def get(self):
-        return zip(self.data, self.context)
+        return self.data
 
     def read(self):
         raise NotImplementedError('Not implemented yet')
 
-
 class Kindle(Base):
     def read(self):
         conn = sqlite3.connect(self.source)
-        for row in conn.execute('SELECT word FROM WORDS;'):
-            self.data.append(row[0])
-        for row in conn.execure('SELECT stem from WORDS;'):
-            self.context.append(row[0])
+        for row in conn.execute('SELECT WORDS.word, LOOKUPS.usage FROM WORDS INNER JOIN LOOKUPS ON WORDS.id = LOOKUPS.word_key LIMIT 5'):
+            self.data.append({'word':row[0], 'context':row[1]})
         conn.close()
+    
 
 
 class Text(Base):
     def read(self):
         with open(self.source, "r") as f:
-            self.data.append(f.readline())
-            self.context.append('')
+            self.data.append({'word':f.readline()})
             
 class Input(Base):
     def read(self):
