@@ -17,7 +17,7 @@ class Base(object):
 class Kindle(Base):
     def read(self):
         conn = sqlite3.connect(self.source)
-        for row in conn.execute('SELECT WORDS.word, LOOKUPS.usage FROM WORDS INNER JOIN LOOKUPS ON WORDS.id = LOOKUPS.word_key LIMIT 5'):
+        for row in conn.execute('SELECT WORDS.word, LOOKUPS.usage FROM WORDS INNER JOIN LOOKUPS ON WORDS.id = LOOKUPS.word_key LIMIT 20'):
             self.data.append({'word':row[0], 'context':row[1]})
         conn.close()
     

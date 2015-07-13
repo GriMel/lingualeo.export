@@ -41,7 +41,7 @@ try:
         result = result + word
         print (result)
         
-    print("There were {} words\n{} added, {} exist".format(added+exist, added, exist, ))
+    print("There were {} words.\n{} added, {} exist.".format(added+exist, added, exist, ))
 
 
 except Exception:
