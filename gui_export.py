@@ -132,9 +132,6 @@ class MainWindow(QtGui.QMainWindow):
         self.source = source
         self.checkState()
     
-    def openFile(self):
-        self.file_name = QtGui.QFileDialog.getOpenFileName(self, self.tr('Open file'))
-    
     def export(self):   #Kindle/Input/Word
         kindle = self.kindle_radio.isChecked()
         text = self.text_radio.isChecked()
@@ -157,14 +154,8 @@ class MainWindow(QtGui.QMainWindow):
             self.table = [{'word':word, 'context': context}]
         
         words = len(self.table)
-        progress = QtGui.QProgressDialog("", "Cancel", 0, words)
-        progress.show()
-        '''
-        t = WorkThread(self.table, lingualeo)
-        t.punched.connect(lambda: progress.setValue(progress.value()+1))
-        t.punched.connect(lambda: progress.setLabelText("Exporting {} out of {}".format(progress.value()+1, words)))
-        t.start()
-        '''
+        p = ExportDialog(self.table, lingualeo)
+        p.exec_()
     
     def truncate(self):
         conn = sqlite3.connect(self.database)
@@ -187,68 +178,77 @@ class MainWindow(QtGui.QMainWindow):
         
 class WorkThread(QtCore.QThread):
     
-    punched = QtCore.pyqtSignal()
+    punched = QtCore.pyqtSignal(int)
     
-    def __init__(self, table, lingualeo):
+    def __init__(self, words):
         super(QtCore.QThread, self).__init__()
-        self.table = table
-        self.lingualeo = lingualeo
+        self.words = words
         
     def __del__(self):
         self.wait()
-    '''
-    def run(self):
-        for i in range(244):
-            time.sleep(0.01)
-            self.punched.emit()
-        self.terminate()
-    '''
     
     def run(self):
-        lingualeo = self.lingualeo
-        for row in self.table:
+        for i in range(self.words):
+            self.punched.emit(i)
+            time.sleep(0.1)
+            
+class ExportDialog(QtGui.QDialog):
+    
+    def __init__(self, table, lingualeo):
+        super(ExportDialog, self).__init__()
+        self.table = table
+        self.words = len(self.table)
+        self.lingualeo = lingualeo
+        self.initUI()
+        self.startTask()
+        
+    def initUI(self):
+        layout = QtGui.QVBoxLayout()
+        self.label = QtGui.QLabel()
+        self.progressBar = QtGui.QProgressBar(self)
+        self.progressBar.setRange(0, self.words)
+        
+        layout.addWidget(self.label)
+        layout.addWidget(self.progressBar)
+        self.setLayout(layout)
+    
+    def closeEvent(self, event):
+        event.accept()
+        self.task.terminate()
+        
+    def startTask(self):
+        self.task = WorkThread(self.words+1)
+        self.task.punched.connect(self.onProgress)
+        self.task.start()
+        
+    def onProgress(self, i):
+        try:
+            row = self.table[i]
             word = row.get('word').lower()
             context = row.get('context', '')
-            translate = lingualeo.get_translates(word)
-            lingualeo.add_word(translate["word"], translate["tword"], context)
-            self.punched.emit()
+            translate = self.lingualeo.get_translates(word)
+            self.lingualeo.add_word(translate['word'], translate['tword'], context)
             if not translate['is_exist']:
                 result = "Added word: "
             else:
                 result = "Already exists: "
-            print(result + word)
-            time.sleep(0.5)
-        self.exit()
-     
-class ExportDialog(QtGui.QWidget):
+                
+            result = result + word
+            print(result)
+        except:
+            print("wrong")
+        self.label.setText("{} words processes out of {}".format(i, self.words))
+        self.progressBar.setValue(i)
+        if self.progressBar.value() == self.progressBar.maximum():
+            self.close()
+            
+'''     
+QtGui.QProgressDialog("Copying", "Cancel", 0, 9)
+class ExportDialog(QtGui.QProgressDialog):
     
-    def __init__(self, text, cancel, one, two):
-        super(QtGui.Widget, self).__init__(text, cancel, one, two)
-        self.initActions()
-    
-    def initUI(self):
-        self.main_layout = QtGui.QVBoxLayout()
-        self.label = QtGui.QLabel()
-        self.exported = QtGui.QLabel()
-        self.progressbar = QtGui.QProgressBar()
-        self.progressbar.setMaximum(100)
-        
-        self.main_layout.addWidget(self.label)
-        self.main_layout.addWidget(self.progressbar)
-        self.main_layout.addWidget(self.exported)
-        
-        self.setLayout(self.main_layout)
-        
-    def retranslateUI(self):
-        self.label.setText(self.tr("Exporting to Lingualeo..."))
-        self.exported.setText("Exported 1 out of 110")
-    
-    def initActions(self):
-        #t = WorkThread()
-        #t.punched.connect(lambda:self.setValue(self.value()+1))
-        #t.start()
-        pass
-        
+    def __init__(self, title, cancel, low, high):
+        super(QtGui.QProgressDialog, self).__init__(title, cancel, low, high)
+'''         
 class AreYouSure(QtGui.QWidget):
     
     def __init__(self):
@@ -261,7 +261,7 @@ class StatisticsWindow(QtGui.QWidget):
         
 def main():
     app = QtGui.QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
+    #app.setQuitOnLastWindowClosed(False)
     m = MainWindow()
     m.show()
     sys.exit(app.exec_())
