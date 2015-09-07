@@ -91,6 +91,7 @@ class MainWindow(QtGui.QMainWindow):
         self.input_word_edit.setFixedHeight(self.input_word_edit.sizeHint().height())
         
     def retranslateUI(self):
+        self.setWindowTitle(self.tr("Export to Lingualeo"))
         self.email_label.setText("e-mail")
         self.pass_label.setText('password')
         self.main_label.setText(self.tr("<center>Choose the source</center>"))
@@ -106,6 +107,7 @@ class MainWindow(QtGui.QMainWindow):
         
         self.export_push.setText(self.tr("Export"))
         self.truncate_push.setText(self.tr("Truncate"))
+    
     def centerUI(self):
         qr = self.frameGeometry()
         cp = QtGui.QDesktopWidget().availableGeometry().center()
@@ -173,12 +175,23 @@ class MainWindow(QtGui.QMainWindow):
         p.exec_()
     
     def truncate(self):
-        conn = sqlite3.connect(self.file_name)
-        with conn:
-            conn.execute("DELETE FROM WORDS;")
-            conn.execute("DELETE FROM LOOKUPS;")
-            conn.execute("UPDATE METADATA SET sscnt = 0 WHERE id in ('WORDS', 'LOOKUPS');")
-            conn.commit()
+        '''truncate Kindle database'''
+        if self.kindleEmpty():
+            self.status_bar.showMessage(self.tr("File is empty"))
+            return
+        reply = QtGui.QMessageBox.question(self, 'Message', 'Are you sure to truncate?', 
+                                           QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, 
+                                           QtGui.QMessageBox.No)
+        if reply == QtGui.QMessageBox.Yes:
+            conn = sqlite3.connect(self.file_name)
+            with conn:
+                conn.execute("DELETE FROM WORDS;")
+                conn.execute("DELETE FROM LOOKUPS;")
+                conn.execute("UPDATE METADATA SET sscnt = 0 WHERE id in ('WORDS', 'LOOKUPS');")
+                conn.commit()
+            self.status_bar.showMessage("Kindle database is empty")
+        else:
+            return
     
     def setKindlePath(self):
         self.file_name = QtGui.QFileDialog.getOpenFileName(self, "Select File", "",)
@@ -198,6 +211,7 @@ class MainWindow(QtGui.QMainWindow):
         self.text_radio.clicked.connect(self.getSource)
         self.kindle_radio.clicked.connect(self.getSource)
         self.export_push.clicked.connect(self.export)
+        self.truncate_push.clicked.connect(self.truncate)
         self.kindle_push.clicked.connect(self.setKindlePath)
         self.email_edit.textChanged.connect(self.changeEditWidth)
         self.pass_edit.textChanged.connect(self.changeEditWidth)
@@ -236,7 +250,7 @@ class WorkThread(QtCore.QThread):
     def run(self):
         for i in self.table:
             self.punched.emit(i)
-            time.sleep(0.1)
+            time.sleep(0.5)
             
 class ExportDialog(QtGui.QDialog):
     
@@ -244,10 +258,12 @@ class ExportDialog(QtGui.QDialog):
         super(ExportDialog, self).__init__()
         self.table = table
         self.stat = list()
+        self.task = WorkThread(self.table)
         self.length = len(self.table)
         self.lingualeo = lingualeo
         self.initUI()
         self.retranslateUI()
+        self.initActions()
         self.startTask()
         
         
@@ -256,14 +272,25 @@ class ExportDialog(QtGui.QDialog):
         self.label = QtGui.QLabel()
         self.progressBar = QtGui.QProgressBar(self)
         self.progressBar.setRange(0, self.length)
-        
+        self.button = QtGui.QPushButton()
         layout.addWidget(self.label)
         layout.addWidget(self.progressBar)
+        layout.addWidget(self.button)
         self.setLayout(layout)
     
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Processing..."))
+        self.button.setText(self.tr("Break"))
     
+    def initActions(self):
+        self.button.clicked.connect(self.task.terminate)
+        self.button.clicked.connect(self.close)
+    
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            self.task.terminate()
+            self.close()
+            
     def closeEvent(self, event):
         event.accept()
         self.task.terminate()
@@ -271,12 +298,11 @@ class ExportDialog(QtGui.QDialog):
         s.exec_()
         
     def startTask(self):
-        self.task = WorkThread(self.table)
+        
         self.task.punched.connect(self.onProgress)
         self.task.start()
         
     def onProgress(self, i):
-        print(i)
         try:
             row = i
             word = row.get('word').lower()
@@ -290,11 +316,10 @@ class ExportDialog(QtGui.QDialog):
                 
             result = result + word
             self.stat.append({"word":word, "result":result})
-            print(result)
         except:
             print("wrong")
         value = self.table.index(i)+1
-        self.label.setText("{} words processes out of {}".format(value, self.length))
+        self.label.setText("{} words processed out of {}".format(value, self.length))
         self.progressBar.setValue(value)
         if self.progressBar.value() == self.progressBar.maximum():
             self.label.setText("Done")
