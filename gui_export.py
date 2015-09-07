@@ -146,7 +146,10 @@ class MainWindow(QtGui.QMainWindow):
         email = self.email_edit.text().strip(" ")
         password = self.pass_edit.text().strip(" ")
         lingualeo = Lingualeo(email, password)
-        print(lingualeo.auth())
+        response = lingualeo.auth()
+        if response.get('error_code') == 403:
+            self.status_bar.showMessage(self.tr(response.get('error_msg')))
+            return
         
         if kindle:
             if not self.kindle_path.text():
