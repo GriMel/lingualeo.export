@@ -17,6 +17,7 @@ class MainWindow(QtGui.QMainWindow):
         self.centerUI()
         self.checkState()
         self.initActions()
+        self.loadDefaults()
         
     def initUI(self):
         self.main_widget = QtGui.QWidget(self)
@@ -25,16 +26,16 @@ class MainWindow(QtGui.QMainWindow):
         self.auth_label = QtGui.QLabel()
         self.email_label = QtGui.QLabel()
         self.email_edit = QtGui.QLineEdit()
+        self.email_edit.setObjectName('email')
         self.pass_label = QtGui.QLabel()
         self.pass_edit = QtGui.QLineEdit()
+        self.pass_edit.setObjectName('pass')
         self.auth_layout.addWidget(self.email_label, 0, 0, 1, 1)
         self.auth_layout.addWidget(self.email_edit, 0, 1, 1, 1)
         self.auth_layout.addWidget(self.pass_label, 1, 0, 1, 1)
         self.auth_layout.addWidget(self.pass_edit, 1, 1, 1, 1)
         
         self.main_label = QtGui.QLabel()
-        
-        
         
         self.input_radio = QtGui.QRadioButton()
         self.input_radio.setChecked(True)
@@ -81,7 +82,8 @@ class MainWindow(QtGui.QMainWindow):
         self.main_layout.addLayout(self.kindle_layout)
         self.main_layout.addStretch(1)
         self.main_layout.addLayout(self.bottom_layout)
-        
+        self.status_bar = QtGui.QStatusBar(self)
+        self.setStatusBar(self.status_bar)
         self.main_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.main_widget)
     
@@ -104,7 +106,6 @@ class MainWindow(QtGui.QMainWindow):
         
         self.export_push.setText(self.tr("Export"))
         self.truncate_push.setText(self.tr("Truncate"))
-    
     def centerUI(self):
         qr = self.frameGeometry()
         cp = QtGui.QDesktopWidget().availableGeometry().center()
@@ -124,8 +125,13 @@ class MainWindow(QtGui.QMainWindow):
         self.text_path.setEnabled(text)
         self.kindle_push.setEnabled(kindle)
         self.kindle_path.setEnabled(kindle)
-        self.truncate_push.setEnabled(kindle)
         
+    def kindleEmpty(self):
+        db = sqlite3.connect(self.file_name)
+        cursor = db.cursor()
+        data = cursor.execute("SELECT * FROM WORDS").fetchall()
+        return len(data) == 0
+                
     def getSource(self):
         source = self.sender().text().lower()
         print(self.sender().text().lower())
@@ -141,33 +147,51 @@ class MainWindow(QtGui.QMainWindow):
         lingualeo.auth()
         
         if kindle:
+            if not self.kindle_path.text():
+                self.status_bar.showMessage(self.tr("No file"))
+                return
+            if self.kindleEmpty():
+                self.status_bar.showMessage(self.tr("Base is empty"))
+                return
             handler = Kindle(self.file_name)
             handler.read()
             self.table = handler.get()
+            
         elif text:
             handler = Text(sources.get('text'))
             handler.read()
             self.table = handler.get()
         else:
-            word = self.input_word_edit
-            context = self.input_context_edit
+            word = self.input_word_edit.text()
+            context = self.input_context_edit.text()
+            if not word:
+                self.status_bar.showMessage(self.tr("No word"))
+                return
             self.table = [{'word':word, 'context': context}]
         
-        words = len(self.table)
         p = ExportDialog(self.table, lingualeo)
         p.exec_()
     
     def truncate(self):
-        conn = sqlite3.connect(self.database)
+        conn = sqlite3.connect(self.file_name)
         with conn:
             conn.execute("DELETE FROM WORDS;")
             conn.execute("DELETE FROM LOOKUPS;")
             conn.execute("UPDATE METADATA SET sscnt = 0 WHERE id in ('WORDS', 'LOOKUPS');")
             conn.commit()
-
+    
     def setKindlePath(self):
         self.file_name = QtGui.QFileDialog.getOpenFileName(self, "Select File", "",)
         self.kindle_path.setText(self.file_name)
+    
+    def changeEditWidth(self):
+        print("em")
+        if 'email' in self.sender().objectName():
+            width_e = self.email_edit.fontMetrics().boundingRect(self.email_edit.text()).width() + 10
+            self.email_edit.setMinimumWidth(width_e)
+        else:
+            width_p = self.pass_edit.fontMetrics().boundingRect(self.pass_edit.text()).width() + 10
+            self.pass_edit.setMinimumWidth(width_p)
         
     def initActions(self):
         self.input_radio.clicked.connect(self.getSource)
@@ -175,20 +199,42 @@ class MainWindow(QtGui.QMainWindow):
         self.kindle_radio.clicked.connect(self.getSource)
         self.export_push.clicked.connect(self.export)
         self.kindle_push.clicked.connect(self.setKindlePath)
+        self.email_edit.textChanged.connect(self.changeEditWidth)
+        self.pass_edit.textChanged.connect(self.changeEditWidth)
+        
+    def closeEvent(self, event):
+        self.saveDefaults()
+        
+    def saveDefaults(self):
+        '''save default email and password'''
+        self.settings = QtCore.QSettings("src.ini", QtCore.QSettings.IniFormat)
+        self.settings.setValue("email", self.email_edit.text())
+        self.settings.setValue("password", self.pass_edit.text())
+        
+    def loadDefaults(self):
+        '''load default email and password'''
+        try:
+            self.settings = QtCore.QSettings("src.ini", QtCore.QSettings.IniFormat)
+            email = self.settings.value("email")
+            password = self.settings.value("password")
+            self.email_edit.setText(email)
+            self.pass_edit.setText(password)
+        except:
+            pass
         
 class WorkThread(QtCore.QThread):
     
-    punched = QtCore.pyqtSignal(int)
+    punched = QtCore.pyqtSignal(dict)
     
-    def __init__(self, words):
+    def __init__(self, table):
         super(QtCore.QThread, self).__init__()
-        self.words = words
+        self.table = table
         
     def __del__(self):
         self.wait()
     
     def run(self):
-        for i in range(self.words):
+        for i in self.table:
             self.punched.emit(i)
             time.sleep(0.1)
             
@@ -197,33 +243,42 @@ class ExportDialog(QtGui.QDialog):
     def __init__(self, table, lingualeo):
         super(ExportDialog, self).__init__()
         self.table = table
-        self.words = len(self.table)
+        self.stat = list()
+        self.length = len(self.table)
         self.lingualeo = lingualeo
         self.initUI()
+        self.retranslateUI()
         self.startTask()
+        
         
     def initUI(self):
         layout = QtGui.QVBoxLayout()
         self.label = QtGui.QLabel()
         self.progressBar = QtGui.QProgressBar(self)
-        self.progressBar.setRange(0, self.words)
+        self.progressBar.setRange(0, self.length)
         
         layout.addWidget(self.label)
         layout.addWidget(self.progressBar)
         self.setLayout(layout)
     
+    def retranslateUI(self):
+        self.setWindowTitle(self.tr("Processing..."))
+    
     def closeEvent(self, event):
         event.accept()
         self.task.terminate()
+        s = StatisticsWindow(self.stat)
+        s.exec_()
         
     def startTask(self):
-        self.task = WorkThread(self.words+1)
+        self.task = WorkThread(self.table)
         self.task.punched.connect(self.onProgress)
         self.task.start()
         
     def onProgress(self, i):
+        print(i)
         try:
-            row = self.table[i]
+            row = i
             word = row.get('word').lower()
             context = row.get('context', '')
             translate = self.lingualeo.get_translates(word)
@@ -234,30 +289,57 @@ class ExportDialog(QtGui.QDialog):
                 result = "Already exists: "
                 
             result = result + word
+            self.stat.append({"word":word, "result":result})
             print(result)
         except:
             print("wrong")
-        self.label.setText("{} words processes out of {}".format(i, self.words))
-        self.progressBar.setValue(i)
+        value = self.table.index(i)+1
+        self.label.setText("{} words processes out of {}".format(value, self.length))
+        self.progressBar.setValue(value)
         if self.progressBar.value() == self.progressBar.maximum():
-            self.close()
-            
-'''     
-QtGui.QProgressDialog("Copying", "Cancel", 0, 9)
-class ExportDialog(QtGui.QProgressDialog):
-    
-    def __init__(self, title, cancel, low, high):
-        super(QtGui.QProgressDialog, self).__init__(title, cancel, low, high)
-'''         
+            self.label.setText("Done")
+                   
 class AreYouSure(QtGui.QWidget):
     
-    def __init__(self):
+    def __init__(self, email, pas):
         super(QtGui.QWidget, self)
         
-class StatisticsWindow(QtGui.QWidget):
+        
+class StatisticsWindow(QtGui.QDialog):
     
-    def __init__(self):
-        super(QtGui.QWidget, self)
+    def __init__(self, stat):
+        super(QtGui.QDialog, self).__init__()
+        self.stat = stat
+        self.initUI()
+        self.retranslateUI()
+    
+    def initUI(self):
+        
+        self.list_view = QtGui.QListView()
+        self.model = QtGui.QStandardItemModel()
+        for index, item in enumerate(self.stat):
+            row = QtGui.QStandardItem()
+            if "exist" in item.get("result"):
+                brush = QtGui.QBrush(QtCore.Qt.red)
+            else:
+                brush = QtGui.QBrush(QtCore.Qt.green)
+            row.setBackground(brush)
+            row.setText(item.get("word"))
+            self.model.appendRow(row)
+        
+        a = len(self.stat)
+        d = ["Add" in i.get("result") for i in self.stat].count(True)
+        self.label = QtGui.QLabel("<center>{} added out of {}</center>".format(d, a))
+        self.list_view.setModel(self.model)
+        self.layout = QtGui.QVBoxLayout()
+        self.tab = QtGui.QScrollArea()
+        self.tab.setWidget(self.list_view)
+        self.layout.addWidget(self.label)
+        self.layout.addWidget(self.tab)
+        self.setLayout(self.layout)
+        
+    def retranslateUI(self):
+        self.setWindowTitle(self.tr("Statistics"))
         
 def main():
     app = QtGui.QApplication(sys.argv)
