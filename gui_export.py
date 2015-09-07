@@ -146,7 +146,7 @@ class MainWindow(QtGui.QMainWindow):
         email = self.email_edit.text().strip(" ")
         password = self.pass_edit.text().strip(" ")
         lingualeo = Lingualeo(email, password)
-        lingualeo.auth()
+        print(lingualeo.auth())
         
         if kindle:
             if not self.kindle_path.text():

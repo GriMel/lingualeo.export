@@ -7,7 +7,7 @@ class Base(object):
 
     def __init__(self, source):
         self.source = source
-
+        self.data = []
     def get(self):
         return self.data
 
