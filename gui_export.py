@@ -1,4 +1,5 @@
 import sys
+import os
 from PyQt4 import QtCore, QtGui
 from word import Kindle, Text, Input
 from config import sources, auth
@@ -133,6 +134,17 @@ class MainWindow(QtGui.QMainWindow):
         cursor = db.cursor()
         data = cursor.execute("SELECT * FROM WORDS").fetchall()
         return len(data) == 0
+    
+    def kindleWrongDatabase(self):
+        basename, ext = os.path.splitext(self.file_name)
+        print(ext)
+        if ext != ".db":
+            return True
+        conn = sqlite3.connect(self.file_name)
+        try:
+            conn.execute("SELECT * FROM WORDS")
+        except:
+            return True
                 
     def getSource(self):
         source = self.sender().text().lower()
@@ -155,9 +167,14 @@ class MainWindow(QtGui.QMainWindow):
             if not self.kindle_path.text():
                 self.status_bar.showMessage(self.tr("No file"))
                 return
+            if self.kindleWrongDatabase():
+                self.status_bar.showMessage(self.tr("Not valid database"))
+                return
             if self.kindleEmpty():
                 self.status_bar.showMessage(self.tr("Base is empty"))
                 return
+            
+            
             handler = Kindle(self.file_name)
             handler.read()
             self.table = handler.get()
