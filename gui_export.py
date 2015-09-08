@@ -6,6 +6,11 @@ from config import sources, auth
 from service import Lingualeo
 import sqlite3
 import time
+
+#CONSTANTS
+DEFAULT_NAME = "src/src.ini"
+TESTS_NAME = "tests/"
+
 class MainWindow(QtGui.QMainWindow):
     
     def __init__(self, source='input'):
@@ -159,7 +164,8 @@ class MainWindow(QtGui.QMainWindow):
         password = self.pass_edit.text().strip(" ")
         lingualeo = Lingualeo(email, password)
         response = lingualeo.auth()
-        if response.get('error_code') == 403:
+        print(response)
+        if response.get('error_code'):
             self.status_bar.showMessage(self.tr(response.get('error_msg')))
             return
         
@@ -218,7 +224,6 @@ class MainWindow(QtGui.QMainWindow):
         self.kindle_path.setText(self.file_name)
     
     def changeEditWidth(self):
-        print("em")
         if 'email' in self.sender().objectName():
             width_e = self.email_edit.fontMetrics().boundingRect(self.email_edit.text()).width() + 10
             self.email_edit.setMinimumWidth(width_e)
@@ -360,26 +365,22 @@ class StatisticsWindow(QtGui.QDialog):
     
     def initUI(self):
         
-        self.list_view = QtGui.QListView()
-        self.model = QtGui.QStandardItemModel()
+        self.list_view= QtGui.QListWidget()
         for index, item in enumerate(self.stat):
-            row = QtGui.QStandardItem()
+            row = QtGui.QListWidgetItem()
             if "exist" in item.get("result"):
                 brush = QtGui.QBrush(QtCore.Qt.red)
             else:
                 brush = QtGui.QBrush(QtCore.Qt.green)
             row.setBackground(brush)
             row.setText(item.get("word"))
-            self.model.appendRow(row)
-        
+            self.list_view.addItem(row)
         a = len(self.stat)
         d = ["Add" in i.get("result") for i in self.stat].count(True)
         self.label = QtGui.QLabel("<center>{} added out of {}</center>".format(d, a))
-        self.list_view.setModel(self.model)
         self.layout = QtGui.QVBoxLayout()
         self.tab = QtGui.QScrollArea()
         self.tab.setWidget(self.list_view)
-        self.layout.addWidget(self.label)
         self.layout.addWidget(self.tab)
         self.setLayout(self.layout)
         
