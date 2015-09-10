@@ -11,6 +11,12 @@ import time
 DEFAULT_NAME = "src/src.ini"
 TESTS_NAME = "tests/"
 
+def centerUI(self):
+    qr = self.frameGeometry()
+    cp = QtGui.QDesktopWidget().availableGeometry().center()
+    qr.moveCenter(cp)
+    self.move(qr.topLeft())
+
 class MainWindow(QtGui.QMainWindow):
     
     def __init__(self, source='input'):
@@ -20,7 +26,7 @@ class MainWindow(QtGui.QMainWindow):
         self.initUI()
         self.setSizeUI()
         self.retranslateUI()
-        self.centerUI()
+        centerUI(self)
         self.checkState()
         self.initActions()
         self.loadDefaults()
@@ -113,12 +119,6 @@ class MainWindow(QtGui.QMainWindow):
         
         self.export_push.setText(self.tr("Export"))
         self.truncate_push.setText(self.tr("Truncate"))
-    
-    def centerUI(self):
-        qr = self.frameGeometry()
-        cp = QtGui.QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
        
     def checkState(self):
         input = self.input_radio.isChecked()
