@@ -17,7 +17,7 @@ class Base(object):
 class Kindle(Base):
     def read(self):
         conn = sqlite3.connect(self.source)
-        for row in conn.execute('SELECT WORDS.stem, LOOKUPS.usage FROM WORDS INNER JOIN LOOKUPS ON WORDS.id = LOOKUPS.word_key LIMIT 10'):
+        for row in conn.execute('SELECT WORDS.stem, LOOKUPS.usage FROM WORDS INNER JOIN LOOKUPS ON WORDS.id = LOOKUPS.word_key'):
             self.data.append({'word':row[0], 'context':row[1]})
         conn.close()
     
@@ -26,7 +26,8 @@ class Kindle(Base):
 class Text(Base):
     def read(self):
         with open(self.source, "r") as f:
-            self.data.append({'word':f.readline()})
+            for line in f:
+                self.data.append({'word':line})
             
 class Input(Base):
     def read(self):
