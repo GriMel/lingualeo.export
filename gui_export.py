@@ -325,7 +325,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def saveDefaults(self):
         '''save default email and password'''
-        self.settings = QtCore.QSettings("src.ini", QtCore.QSettings.IniFormat)
+        self.settings = QtCore.QSettings(DEFAULT_NAME, QtCore.QSettings.IniFormat)
         self.settings.setValue("email", self.email_edit.text())
         self.settings.setValue("password", self.pass_edit.text())
 
