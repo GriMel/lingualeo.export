@@ -7,8 +7,11 @@ import sqlite3
 import time
 
 # CONSTANTS
-DEFAULT_NAME = "src/src.ini"
+DEFAULT_NAME = "src.ini"
 TESTS_NAME = "tests/"
+MAIN_ICO = "lingualeo.ico"
+EXPORT_ICO = "export.ico"
+EXIT_ICO = ""
 
 
 def centerUI(self):
