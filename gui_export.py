@@ -245,17 +245,15 @@ class MainWindow(QtGui.QMainWindow):
         password = self.pass_edit.text().strip(" ")
         lingualeo = Lingualeo(email, password)
 
-        # Handle no internet connection/no site connection
         try:
-            response = lingualeo.auth()
-        except:
+            lingualeo.auth()
+        # Handle no internet connection/no site connection
+        except ConnectionError:
             self.status_bar.showMessage(self.tr("No connection"))
             return
-
         # Handle wrong email/password
-        if response.get('error_code'):
-            self.status_bar.showMessage(self.tr(response.get('error_msg')))
-            return
+        except KeyError:
+            self.status_bar.showMessage(self.tr("Email or password is incorrect"))
 
         if kindle:
             self.file_name = self.kindle_path.text()
