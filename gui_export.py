@@ -321,7 +321,10 @@ class MainWindow(QtGui.QMainWindow):
         self.pass_edit.textChanged.connect(self.changeEditWidth)
 
     def closeEvent(self, event):
-        self.saveDefaults()
+        a = AreYouSure()
+        a.saved.connect(self.saveDefaults)
+        a.exec_()
+        event.ignore()
 
     def saveDefaults(self):
         '''save default email and password'''
