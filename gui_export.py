@@ -5,7 +5,7 @@ from word import Kindle, Text
 from service import Lingualeo
 import sqlite3
 import time
-
+from requests.exceptions import ConnectionError
 # CONSTANTS
 DEFAULT_NAME = "src.ini"
 TESTS_NAME = "tests/"
