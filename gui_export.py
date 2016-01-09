@@ -21,6 +21,47 @@ def centerUI(self):
     self.move(qr.topLeft())
 
 
+class AreYouSure(QtGui.QDialog):
+
+    saved = QtCore.pyqtSignal()
+
+    def __init__(self):
+        super(AreYouSure, self).__init__()
+        self.initUI()
+        self.retranslateUI()
+        self.initActions()
+
+    def initUI(self):
+        layout = QtGui.QVBoxLayout()
+        hor_lay = QtGui.QHBoxLayout()
+        self.label = QtGui.QLabel()
+        self.check_item = QtGui.QCheckBox()
+        self.yes = QtGui.QPushButton()
+        self.no = QtGui.QPushButton()
+        hor_lay.addWidget(self.yes)
+        hor_lay.addWidget(self.no)
+        layout.addWidget(self.check_item)
+        layout.addWidget(self.label)
+        layout.addLayout(hor_lay)
+        self.setLayout(layout)
+
+    def retranslateUI(self):
+        self.setWindowTitle("Exit")
+        self.label.setText("Are you sure to quit?")
+        self.yes.setText("Yes")
+        self.no.setText("No")
+        self.check_item.setText("Save e-mail/password")
+
+    def exit(self):
+        if self.check_item.isChecked():
+            self.saved.emit()
+        QtGui.QApplication.quit()
+
+    def initActions(self):
+        self.yes.clicked.connect(self.exit)
+        self.no.clicked.connect(self.close)
+
+
 class MainWindow(QtGui.QMainWindow):
 
     def __init__(self, source='input'):
