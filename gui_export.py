@@ -373,26 +373,33 @@ class ExportDialog(QtGui.QDialog):
         self.initUI()
         self.retranslateUI()
         self.initActions()
-        self.startTask()
 
     def initUI(self):
+        self.setWindowIcon(QtGui.QIcon(EXPORT_ICO))
         layout = QtGui.QVBoxLayout()
         self.label = QtGui.QLabel()
         self.progressBar = QtGui.QProgressBar(self)
         self.progressBar.setRange(0, self.length)
-        self.button = QtGui.QPushButton()
+        self.startButton = QtGui.QPushButton()
+        self.breakButton = QtGui.QPushButton()
+        hor_layout = QtGui.QHBoxLayout()
+        hor_layout.addWidget(self.startButton)
+        hor_layout.addWidget(self.breakButton)
         layout.addWidget(self.label)
         layout.addWidget(self.progressBar)
-        layout.addWidget(self.button)
+        layout.addLayout(hor_layout)
         self.setLayout(layout)
+        self.breakButton.hide()
 
     def retranslateUI(self):
-        self.setWindowTitle(self.tr("Processing..."))
-        self.button.setText(self.tr("Break"))
+        self.setWindowTitle(self.tr("Preparing to export"))
+        self.startButton.setText(self.tr("Start"))
+        self.breakButton.setText(self.tr("Break"))
 
     def initActions(self):
-        self.button.clicked.connect(self.task.terminate)
-        self.button.clicked.connect(self.close)
+        self.startButton.clicked.connect(self.startTask)
+        self.breakButton.clicked.connect(self.task.terminate)
+        self.breakButton.clicked.connect(self.close)
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
@@ -406,7 +413,9 @@ class ExportDialog(QtGui.QDialog):
         s.exec_()
 
     def startTask(self):
-
+        self.startButton.hide()
+        self.breakButton.show()
+        self.setWindowTitle(self.tr("Processing..."))
         self.task.punched.connect(self.onProgress)
         self.task.start()
 
@@ -431,13 +440,7 @@ class ExportDialog(QtGui.QDialog):
         self.progressBar.setValue(value)
         if self.progressBar.value() == self.progressBar.maximum():
             self.label.setText(self.tr("Finished"))
-            self.button.setText(self.tr("Done"))
-
-
-class AreYouSure(QtGui.QWidget):
-
-    def __init__(self, email, pas):
-        super(QtGui.QWidget, self)
+            self.breakButton.setText(self.tr("Close"))
 
 
 class StatisticsWindow(QtGui.QDialog):
