@@ -77,6 +77,7 @@ class MainWindow(QtGui.QMainWindow):
         self.loadDefaults()
 
     def initUI(self):
+        self.setWindowIcon(QtGui.QIcon(MAIN_ICO))
         self.main_widget = QtGui.QWidget(self)
         self.main_layout = QtGui.QVBoxLayout()
         self.auth_layout = QtGui.QGridLayout()
@@ -474,6 +475,7 @@ class StatisticsWindow(QtGui.QDialog):
 
 def main():
     app = QtGui.QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     # app.setQuitOnLastWindowClosed(False)
     m = MainWindow()
     m.show()
