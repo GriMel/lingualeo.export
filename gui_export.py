@@ -371,9 +371,9 @@ class WorkThread(QtCore.QThread):
 
     punched = QtCore.pyqtSignal(dict)
 
-    def __init__(self, table):
+    def __init__(self, table, index=0):
         super(WorkThread, self).__init__()
-        self.table = table
+        self.table = table[index:]
 
     def __del__(self):
         self.wait()
@@ -387,9 +387,11 @@ class WorkThread(QtCore.QThread):
 class ExportDialog(QtGui.QDialog):
 
     def __init__(self, table, lingualeo):
+
         super(ExportDialog, self).__init__()
         self.table = table
         self.stat = list()
+        self.value = 0
         self.task = WorkThread(self.table)
         self.length = len(self.table)
         self.lingualeo = lingualeo
