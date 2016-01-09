@@ -400,29 +400,63 @@ class ExportDialog(QtGui.QDialog):
         self.initActions()
 
     def initUI(self):
+
         self.setWindowIcon(QtGui.QIcon(EXPORT_ICO))
         layout = QtGui.QVBoxLayout()
+
+        info_layout = QtGui.QVBoxLayout()
+        self.avatar_label = QtGui.QLabel()
+        self.fname_label = QtGui.QLabel()
+        self.lvl_label = QtGui.QLabel()
+        self.meatballs_label = QtGui.QLabel()
+
+        info_layout.addWidget(self.avatar_label)
+        info_layout.addWidget(self.fname_label)
+        info_layout.addWidget(self.lvl_label)
+        info_layout.addWidget(self.meatballs_label)
+
+        progress_layout = QtGui.QVBoxLayout()
+        hor_layout = QtGui.QHBoxLayout()
         self.label = QtGui.QLabel()
         self.progressBar = QtGui.QProgressBar(self)
         self.progressBar.setRange(0, self.length)
         self.startButton = QtGui.QPushButton()
         self.breakButton = QtGui.QPushButton()
-        hor_layout = QtGui.QHBoxLayout()
+
+        progress_layout.addWidget(self.label)
+        progress_layout.addWidget(self.progressBar)
         hor_layout.addWidget(self.startButton)
         hor_layout.addWidget(self.breakButton)
-        layout.addWidget(self.label)
-        layout.addWidget(self.progressBar)
-        layout.addLayout(hor_layout)
+        progress_layout.addLayout(hor_layout)
+
+        layout.addLayout(info_layout)
+        layout.addLayout(progress_layout)
         self.setLayout(layout)
         self.breakButton.hide()
 
     def retranslateUI(self):
+
+        avatar = QtGui.QPixmap()
+        avatar.loadFromData(self.lingualeo.avatar)
+        self.avatar_label.setPixmap(avatar)
+        self.avatar_label.setScaledContents(True)
+
+        fname = "Name: {}".format(self.lingualeo.fname)
+        self.fname_label.setText(fname)
+
+        lvl = "Lvl: {}".format(self.lingualeo.lvl)
+        self.lvl_label.setText(lvl)
+
+        meatballs = "Meatballs: {}".format(self.lingualeo.meatballs)
+        self.meatballs_label.setText(meatballs)
+
         self.setWindowTitle(self.tr("Preparing to export"))
         self.startButton.setText(self.tr("Start"))
         self.breakButton.setText(self.tr("Break"))
 
     def initActions(self):
-        self.startButton.clicked.connect(self.startTask)
+        self.startButton.clicked.connect(self.changeTask)
+        self.startButton.clicked.connect(self.test)
         self.breakButton.clicked.connect(self.task.terminate)
         self.breakButton.clicked.connect(self.close)
 
@@ -431,41 +465,62 @@ class ExportDialog(QtGui.QDialog):
             self.task.terminate()
             self.close()
 
+    def test(self):
+        print("Clicked")
+
     def closeEvent(self, event):
         event.accept()
         self.task.terminate()
         s = StatisticsWindow(self.stat)
         s.exec_()
 
-    def startTask(self):
-        self.startButton.hide()
-        self.breakButton.show()
-        self.setWindowTitle(self.tr("Processing..."))
-        self.task.punched.connect(self.onProgress)
-        self.task.start()
+    def changeTask(self):
+        if self.sender().text() == "Start":
+            self.startButton.setText(self.tr("Stop"))
+            self.breakButton.show()
+            self.setWindowTitle(self.tr("Processing..."))
+            if self.value > 0:
+                self.task = WorkThread(self.table, self.value)
+            self.task.punched.connect(self.onProgress)
+            self.task.start()
+        else:
+            self.task.terminate()
+            self.startButton.setText(self.tr("Start"))
+            self.breakButton.hide()
+            warning = WarningDialog("No Internet Connection")
+            warning.exec_()
 
     def onProgress(self, i):
         try:
             row = i
             word = row.get('word').lower()
             context = row.get('context', '')
-            translate = self.lingualeo.get_translates(word)
-            self.lingualeo.add_word(translate['word'], translate['tword'], context)
-            if not translate['is_exist']:
-                result = "Added word: "
+            translate = self.lingualeo.get_translate(word)
+            self.lingualeo.add_word(translate['word'],
+                                    translate['tword'],
+                                    context)
+            if translate['is_exist']:
+                result = "Exist"
+            elif translate['tword'] == "No translation":
+                result = "No translation"
             else:
-                result = "Already exists: "
-
-            result = result + word
-            self.stat.append({"word":word, "result":result})
-        except:
-            print("wrong")
-        value = self.table.index(i)+1
-        self.label.setText("{} words processed out of {}".format(value, self.length))
-        self.progressBar.setValue(value)
+                result = "New"
+            self.stat.append({"word": word,
+                              "result": result,
+                              "tword": translate['tword']})
+        except ConnectionError:
+            print("Connection Error")
+            self.startButton.click()
+            return
+        
+        self.value = self.table.index(i)
+        self.label.setText("{} words processed out of {}".format(self.value,
+                                                                 self.length))
+        self.progressBar.setValue(self.value+1)
         if self.progressBar.value() == self.progressBar.maximum():
             self.label.setText(self.tr("Finished"))
             self.breakButton.setText(self.tr("Close"))
+            self.startButton.hide()
 
 
 class StatisticsWindow(QtGui.QDialog):
@@ -479,26 +534,43 @@ class StatisticsWindow(QtGui.QDialog):
     def initUI(self):
 
         self.list_view = QtGui.QListWidget()
+        self.table = QtGui.QTableWidget()
+        self.table.setColumnCount(2)
         for index, item in enumerate(self.stat):
-            row = QtGui.QListWidgetItem()
-            if "exist" in item.get("result"):
-                brush = QtGui.QBrush(QtCore.Qt.red)
+            if item.get("result") == "New":
+                brush = QtCore.Qt.green
+            elif item.get("result") == "No translation":
+                brush = QtCore.Qt.yellow
             else:
-                brush = QtGui.QBrush(QtCore.Qt.green)
-            row.setBackground(brush)
-            row.setText(item.get("word"))
-            self.list_view.addItem(row)
+                brush = QtCore.Qt.red
+            word =  QtGui.QTableWidgetItem(item.get("word"))
+            translate = QtGui.QTableWidgetItem(item.get("tword"))
+            word.setBackground(brush)
+            translate.setBackgroundColor(brush)
+            rowPosition = self.table.rowCount()
+            self.table.insertRow(rowPosition)
+            self.table.setItem(rowPosition, 0, word)
+            self.table.setItem(rowPosition, 1, translate)
+        self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.table.resizeColumnsToContents()
+        total = len(self.stat)
+        added = [i.get("result")=="New" for i in self.stat].count(True)
+        wrong = [i.get("result") == "No translation" for i in self.stat].count(True)
+        exist = len(self.stat) - (added+wrong)
 
-        a = len(self.stat)
-        d = ["Add" in i.get("result") for i in self.stat].count(True)
-        self.label = QtGui.QLabel("<center>{} added out of {}</center>".format(d, a))
+        self.label = QtGui.QLabel("""
+            <center>Total: {}<br>
+             Added: {}<br>
+             No translation: {}<br>
+             Exist: {}</center>
+            """.format(total, added, wrong, exist))
         self.layout = QtGui.QVBoxLayout()
         self.tab = QtGui.QScrollArea()
-        self.tab.setWidget(self.list_view)
+        self.tab.setWidget(self.table)
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.tab)
         self.setLayout(self.layout)
-        self.setMaximumWidth(self.sizeHint().width())
+        #self.setMaximumWidth(self.sizeHint().width())
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Statistics"))
