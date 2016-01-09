@@ -12,7 +12,7 @@ TESTS_NAME = "tests/"
 MAIN_ICO = "lingualeo.ico"
 EXPORT_ICO = "export.ico"
 EXIT_ICO = ""
-
+WARN_ICO = ""
 
 def centerUI(self):
     qr = self.frameGeometry()
@@ -60,6 +60,31 @@ class AreYouSure(QtGui.QDialog):
     def initActions(self):
         self.yes.clicked.connect(self.exit)
         self.no.clicked.connect(self.close)
+
+
+class WarningDialog(QtGui.QDialog):
+
+    def __init__(self, text):
+        super(WarningDialog, self).__init__()
+        self.text = text
+        self.initUI()
+        self.retranslateUI()
+        self.initActions()
+
+    def initUI(self):
+        layout = QtGui.QVBoxLayout()
+        self.label = QtGui.QLabel()
+        self.ok_button = QtGui.QPushButton()
+        layout.addWidget(self.label)
+        layout.addWidget(self.ok_button)
+        self.setLayout(layout)
+
+    def retranslateUI(self):
+        self.label.setText(self.text)
+        self.ok_button.setText("OK")
+
+    def initActions(self):
+        self.ok_button.clicked.connect(self.close)
 
 
 class MainWindow(QtGui.QMainWindow):
