@@ -1,52 +1,71 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import urllib
-import urllib.request as urllib2
-import json
-from http.cookiejar import CookieJar
+import requests
+from requests.exceptions import ConnectionError
+
+LOGIN = "http://api.lingualeo.com/api/login"
+ADD_WORD = "http://api.lingualeo.com/addword"
+GET_TRANSLATE = "http://api.lingualeo.com/gettranslates?word="
 
 
 class Lingualeo:
+
     def __init__(self, email, password):
         self.email = email
         self.password = password
-        self.cj = CookieJar()
+        self.cookies = None
+        self.premium = None
+        self.meatballs = None
+        self.avatar = None
+        self.fname = None
+        self.lvl = None
 
     def auth(self):
-        url = "http://api.lingualeo.com/api/login"
+        url = LOGIN
         values = {
             "email": self.email,
             "password": self.password
         }
+        r = requests.get(url, values)
+        self.cookies = r.cookies
+        content = r.json()['user']
+        self.premium = bool(content['premium_type'])
+        if not self.premium:
+            self.meatballs = content['meatballs']
+        else:
+            self.meatballs = "Unlimited"
+        self.fname = content['fullname']
+        self.avatar = requests.get(content['avatar_mini']).content
+        self.lvl = content['xp_level']
 
-        return self.get_content(url, values)
+    def get_translate(self, word):
+        url = GET_TRANSLATE + word
+        try:
+            r = requests.get(url, cookies=self.cookies)
+            translate = r.json()['translate'][0]
+            tword = translate['value']
+            is_exist = translate['is_user']
+            return {
+                "is_exist": is_exist,
+                "word": word,
+                "tword": tword
+            }
+        except IndexError:
+            return {"is_exist":0,
+                    "word": word,
+                    "tword": "No translation"}
 
     def add_word(self, word, tword, context=""):
-        url = "http://api.lingualeo.com/addword"
+        url = ADD_WORD
         values = {
             "word": word,
             "tword": tword,
-            "context":context
+            "context": context
         }
-        self.get_content(url, values)
+        requests.post(url, values, cookies=self.cookies)
 
-    def get_translates(self, word):
-        url = "http://api.lingualeo.com/gettranslates?word=" + urllib.parse.quote_plus(word)
+    def isPremium(self):
+        return self.premium
 
-        try:
-            result = self.get_content(url, {})
-            translate = result["translate"][0]
-            return {
-                "is_exist": translate["is_user"],
-                "word": word,
-                "tword": translate["value"].encode("utf-8")
-            }
-        except Exception as e:
-            return e.message
-
-    def get_content(self, url, values):
-        data = urllib.parse.urlencode(values).encode('utf-8')
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
-        req = opener.open(url, data)
-
-        return json.loads(req.read().decode('utf-8'))
+    def substractMeatballs(self):
+        self.meatballs -= 1
