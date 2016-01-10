@@ -519,10 +519,15 @@ class ExportDialog(QtGui.QDialog):
                                     context)
             if translate['is_exist']:
                 result = "Exist"
-            elif translate['tword'] == "No translation":
-                result = "No translation"
             else:
-                result = "New"
+                if translate['tword'] == "No translation":
+                    result = "No translation"
+                else:
+                    result = "New"
+                self.lingualeo.substractMeatballs()
+                meatballs = "Meatballs: {}".format(self.lingualeo.meatballs)
+                self.meatballs_label.setText(meatballs)
+
             self.stat.append({"word": word,
                               "result": result,
                               "tword": translate['tword']})
@@ -569,7 +574,9 @@ class StatisticsWindow(QtGui.QDialog):
             if item.get("result") == "New":
                 brush = QtCore.Qt.green
             elif item.get("result") == "No translation":
-                brush = QtCore.Qt.yellow
+                brush = QtCore.Qt.orange
+            elif item.get("result") == "Not added":
+                brush = QtCore.Qt.white
             else:
                 brush = QtCore.Qt.red
             word =  QtGui.QTableWidgetItem(item.get("word"))
@@ -584,15 +591,18 @@ class StatisticsWindow(QtGui.QDialog):
         self.table.resizeColumnsToContents()
         total = len(self.stat)
         added = [i.get("result")=="New" for i in self.stat].count(True)
+        not_added = [i.get("result") == "Not added" for i in self.stat].count(True)
         wrong = [i.get("result") == "No translation" for i in self.stat].count(True)
-        exist = len(self.stat) - (added+wrong)
+        exist = len(self.stat) - (added+not_added+wrong)
+        added = added + wrong
 
         self.label = QtGui.QLabel("""
             <center>Total: {}<br>
              Added: {}<br>
+             Not added: {}<br>
              No translation: {}<br>
              Exist: {}</center>
-            """.format(total, added, wrong, exist))
+            """.format(total, added, not_added, wrong, exist))
         self.layout = QtGui.QVBoxLayout()
         self.tab = QtGui.QScrollArea()
         self.tab.setWidget(self.table)
