@@ -425,6 +425,10 @@ class ExportDialog(QtGui.QDialog):
         info_layout.addWidget(self.lvl_label)
         info_layout.addWidget(self.meatballs_label)
 
+        warning_layout = QtGui.QHBoxLayout()
+        self.warning_info_label = QtGui.QLabel()
+        warning_layout.addWidget(self.warning_info_label)
+
         progress_layout = QtGui.QVBoxLayout()
         hor_layout = QtGui.QHBoxLayout()
         self.label = QtGui.QLabel()
@@ -440,7 +444,9 @@ class ExportDialog(QtGui.QDialog):
         progress_layout.addLayout(hor_layout)
 
         layout.addLayout(info_layout)
+        layout.addLayout(warning_layout)
         layout.addLayout(progress_layout)
+
         self.setLayout(layout)
         self.breakButton.hide()
 
@@ -460,6 +466,9 @@ class ExportDialog(QtGui.QDialog):
         meatballs = "Meatballs: {}".format(self.lingualeo.meatballs)
         self.meatballs_label.setText(meatballs)
 
+        if self.lingualeo.meatballs < self.length:
+            self.warning_info_label.setText("WARNING: Meatballs < Words")
+            self.warning_info_label.setStyleSheet("color:red")
         self.setWindowTitle(self.tr("Preparing to export"))
         self.startButton.setText(self.tr("Start"))
         self.breakButton.setText(self.tr("Break"))
