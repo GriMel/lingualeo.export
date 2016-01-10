@@ -1,2 +1,11 @@
-config.py
 *.pyc
+.project
+.pydevproject
+.settings/
+*.ini
+*.db
+build/
+dist/
+*.spec
+new.py
+*.fuse
