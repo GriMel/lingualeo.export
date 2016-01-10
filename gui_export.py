@@ -591,7 +591,9 @@ class StatisticsWindow(QtGui.QDialog):
             self.table.setItem(rowPosition, 0, word)
             self.table.setItem(rowPosition, 1, translate)
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        self.table.resizeColumnsToContents()
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(True)
+        #self.table.resizeColumnsToContents()
         total = len(self.stat)
         added = [i.get("result")=="New" for i in self.stat].count(True)
         not_added = [i.get("result") == "Not added" for i in self.stat].count(True)
@@ -607,12 +609,9 @@ class StatisticsWindow(QtGui.QDialog):
              Exist: {}</center>
             """.format(total, added, not_added, wrong, exist))
         self.layout = QtGui.QVBoxLayout()
-        self.tab = QtGui.QScrollArea()
-        self.tab.setWidget(self.table)
         self.layout.addWidget(self.label)
-        self.layout.addWidget(self.tab)
+        self.layout.addWidget(self.table)
         self.setLayout(self.layout)
-        #self.setMaximumWidth(self.sizeHint().width())
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Statistics"))
