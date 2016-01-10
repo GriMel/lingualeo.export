@@ -375,9 +375,8 @@ class WorkThread(QtCore.QThread):
 
     punched = QtCore.pyqtSignal(dict)
 
-    def __init__(self, table, index=0):
+    def __init__(self):
         super(WorkThread, self).__init__()
-        self.table = table[index:]
 
     def __del__(self):
         self.wait()
@@ -385,7 +384,13 @@ class WorkThread(QtCore.QThread):
     def run(self):
         for i in self.table:
             self.punched.emit(i)
-            time.sleep(0.5)
+            time.sleep(0.7)
+
+    def stop(self):
+        self.terminate()
+
+    def getData(self, table, index=0):
+        self.table = table[index:]
 
 
 class ExportDialog(QtGui.QDialog):
@@ -396,7 +401,8 @@ class ExportDialog(QtGui.QDialog):
         self.table = table
         self.stat = list()
         self.value = 0
-        self.task = WorkThread(self.table)
+        self.task = WorkThread()
+        self.task.getData(table)
         self.length = len(self.table)
         self.lingualeo = lingualeo
         self.initUI()
@@ -460,13 +466,13 @@ class ExportDialog(QtGui.QDialog):
 
     def initActions(self):
         self.startButton.clicked.connect(self.changeTask)
-        self.startButton.clicked.connect(self.test)
-        self.breakButton.clicked.connect(self.task.terminate)
+        self.breakButton.clicked.connect(self.task.stop)
         self.breakButton.clicked.connect(self.close)
+        self.task.punched.connect(self.onProgress)
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
-            self.task.terminate()
+            self.task.stop()
             self.close()
 
     def test(self):
@@ -474,7 +480,7 @@ class ExportDialog(QtGui.QDialog):
 
     def closeEvent(self, event):
         event.accept()
-        self.task.terminate()
+        self.task.stop()
         s = StatisticsWindow(self.stat)
         s.exec_()
 
@@ -484,11 +490,10 @@ class ExportDialog(QtGui.QDialog):
             self.breakButton.show()
             self.setWindowTitle(self.tr("Processing..."))
             if self.value > 0:
-                self.task = WorkThread(self.table, self.value)
-            self.task.punched.connect(self.onProgress)
+                self.task.getData(self.table, self.value)
             self.task.start()
         else:
-            self.task.terminate()
+            self.task.stop()
             self.startButton.setText(self.tr("Start"))
             self.breakButton.hide()
             warning = WarningDialog("No Internet Connection")
