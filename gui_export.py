@@ -505,8 +505,11 @@ class ExportDialog(QtGui.QDialog):
             self.task.stop()
             self.startButton.setText(self.tr("Start"))
             self.breakButton.hide()
-            warning = WarningDialog("No Internet Connection")
-            warning.exec_()
+
+    def finish(self):
+        self.label.setText(self.tr("Finished"))
+        self.breakButton.setText(self.tr("Close"))
+        self.startButton.hide()
 
     def onProgress(self, i):
         try:
