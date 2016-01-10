@@ -271,6 +271,10 @@ class MainWindow(QtGui.QMainWindow):
             if self.kindleEmpty():
                 self.status_bar.showMessage(self.tr("Base is empty"))
                 return
+            # Handle 0 meatballs
+            if lingualeo.meatballs == 0:
+                self.status_bar.showMessage(self.tr("No meatballs"))
+                return
 
             handler = Kindle(self.file_name)
             handler.read()
@@ -516,11 +520,23 @@ class ExportDialog(QtGui.QDialog):
         self.value = self.table.index(i)
         self.label.setText("{} words processed out of {}".format(self.value,
                                                                  self.length))
-        self.progressBar.setValue(self.value+1)
-        if self.progressBar.value() == self.progressBar.maximum():
-            self.label.setText(self.tr("Finished"))
-            self.breakButton.setText(self.tr("Close"))
-            self.startButton.hide()
+        # initial value of progressBar is -1
+        if self.value == 3:
+            self.lingualeo.meatballs = 0
+        self.progressBar.setValue(self.value)
+        if self.lingualeo.meatballs == 0:
+            self.task.stop()
+            self.progressBar.setValue(self.progressBar.maximum())
+            self.warning_info_label.setText(self.tr("No meatballs. Upload stopd"))           
+            self.finish()
+            for i in self.table[self.value:]:
+                self.stat.append({"word": i['word'],
+                                  "result": "Not added",
+                                  "tword": ""})
+            return
+
+        if (self.progressBar.value() == self.progressBar.maximum()):
+            self.finish()
 
 
 class StatisticsWindow(QtGui.QDialog):
