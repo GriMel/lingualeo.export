@@ -484,9 +484,6 @@ class ExportDialog(QtGui.QDialog):
             self.task.stop()
             self.close()
 
-    def test(self):
-        print("Clicked")
-
     def closeEvent(self, event):
         event.accept()
         self.task.stop()
@@ -530,7 +527,6 @@ class ExportDialog(QtGui.QDialog):
                               "result": result,
                               "tword": translate['tword']})
         except ConnectionError:
-            print("Connection Error")
             self.startButton.click()
             return
         
