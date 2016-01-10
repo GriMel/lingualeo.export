@@ -531,11 +531,14 @@ class ExportDialog(QtGui.QDialog):
             self.stat.append({"word": word,
                               "result": result,
                               "tword": translate['tword']})
+
         except ConnectionError:
             self.startButton.click()
+            warning = WarningDialog("No Internet Connection")
+            warning.exec_()
             return
-        
-        self.value = self.table.index(i)
+
+        self.value = self.table.index(i)+1
         self.label.setText("{} words processed out of {}".format(self.value,
                                                                  self.length))
         # initial value of progressBar is -1
