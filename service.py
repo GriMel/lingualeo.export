@@ -51,7 +51,7 @@ class Lingualeo:
                 "tword": tword
             }
         except IndexError:
-            return {"is_exist":0,
+            return {"is_exist": 0,
                     "word": word,
                     "tword": "No translation"}
 
