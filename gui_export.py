@@ -6,19 +6,30 @@ from service import Lingualeo
 import sqlite3
 import time
 from requests.exceptions import ConnectionError
+from pydub import AudioSegment
+from pydub.playback import play
+
 # CONSTANTS
 DEFAULT_NAME = "src.ini"
 TESTS_NAME = "tests/"
 MAIN_ICO = "lingualeo.ico"
 EXPORT_ICO = "export.ico"
-EXIT_ICO = ""
-WARN_ICO = ""
+STAT_ICO = "statistics.ico"
+EXIT_ICO = "exit.ico"
+WARN_ICO = "warning.ico"
+
 
 def centerUI(self):
     qr = self.frameGeometry()
     cp = QtGui.QDesktopWidget().availableGeometry().center()
     qr.moveCenter(cp)
     self.move(qr.topLeft())
+
+
+def playSound(name):
+    song = AudioSegment.from_mp3(name)
+    song = song[:1500]
+    play(song)
 
 
 class AreYouSure(QtGui.QDialog):
@@ -47,6 +58,7 @@ class AreYouSure(QtGui.QDialog):
 
     def retranslateUI(self):
         self.setWindowTitle("Exit")
+        self.setWindowIcon(QtGui.QIcon(EXIT_ICO))
         self.label.setText("Are you sure to quit?")
         self.yes.setText("Yes")
         self.no.setText("No")
@@ -80,6 +92,7 @@ class WarningDialog(QtGui.QDialog):
         self.setLayout(layout)
 
     def retranslateUI(self):
+        self.setWindowIcon(QtGui.QIcon(WARN_ICO))
         self.label.setText(self.text)
         self.ok_button.setText("OK")
 
@@ -102,7 +115,6 @@ class MainWindow(QtGui.QMainWindow):
         self.loadDefaults()
 
     def initUI(self):
-        self.setWindowIcon(QtGui.QIcon(MAIN_ICO))
         self.main_widget = QtGui.QWidget(self)
         self.main_layout = QtGui.QVBoxLayout()
         self.auth_layout = QtGui.QGridLayout()
@@ -175,6 +187,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Export to Lingualeo"))
+        self.setWindowIcon(QtGui.QIcon(MAIN_ICO))
         self.email_label.setText("e-mail")
         self.pass_label.setText('password')
         self.main_label.setText(self.tr("<center>Choose the source</center>"))
@@ -452,6 +465,7 @@ class ExportDialog(QtGui.QDialog):
 
     def retranslateUI(self):
 
+        self.setWindowIcon(QtGui.QIcon(EXPORT_ICO))
         avatar = QtGui.QPixmap()
         avatar.loadFromData(self.lingualeo.avatar)
         self.avatar_label.setPixmap(avatar)
