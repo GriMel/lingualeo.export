@@ -397,7 +397,7 @@ class WorkThread(QtCore.QThread):
     def run(self):
         for i in self.table:
             self.punched.emit(i)
-            time.sleep(0.7)
+            time.sleep(1)
 
     def stop(self):
         self.terminate()
@@ -556,8 +556,6 @@ class ExportDialog(QtGui.QDialog):
         self.label.setText("{} words processed out of {}".format(self.value,
                                                                  self.length))
         # initial value of progressBar is -1
-        if self.value == 3:
-            self.lingualeo.meatballs = 0
         self.progressBar.setValue(self.value)
         if self.lingualeo.meatballs == 0:
             self.task.stop()
