@@ -1,3 +1,10 @@
+# !/usr/bin/env python
+"""
+Usage: python gui_export.py
+
+===GUI version of lingualeo.export===
+"""
+
 import sys
 import os
 from PyQt4 import QtCore, QtGui
@@ -5,7 +12,8 @@ from word import Kindle, Text
 from service import Lingualeo
 import sqlite3
 import time
-from requests.exceptions import ConnectionError
+from PyQt4 import QtCore, QtGui
+from requests.exceptions import ConnectionError as NoConnection
 from pydub import AudioSegment
 from pydub.playback import play
 
@@ -20,6 +28,7 @@ WARN_ICO = "warning.ico"
 
 
 def centerUI(self):
+    """place UI in the middle of the screen"""
     qr = self.frameGeometry()
     cp = QtGui.QDesktopWidget().availableGeometry().center()
     qr.moveCenter(cp)
@@ -27,13 +36,14 @@ def centerUI(self):
 
 
 def playSound(name):
+    """play sounds, e.g name='w.mp3'"""
     song = AudioSegment.from_mp3(name)
     song = song[:1500]
     play(song)
 
 
 class AreYouSure(QtGui.QDialog):
-
+    """exit dialog"""
     saved = QtCore.pyqtSignal()
 
     def __init__(self):
@@ -47,10 +57,10 @@ class AreYouSure(QtGui.QDialog):
         hor_lay = QtGui.QHBoxLayout()
         self.label = QtGui.QLabel()
         self.check_item = QtGui.QCheckBox()
-        self.yes = QtGui.QPushButton()
-        self.no = QtGui.QPushButton()
-        hor_lay.addWidget(self.yes)
-        hor_lay.addWidget(self.no)
+        self.yes_button = QtGui.QPushButton()
+        self.no_button = QtGui.QPushButton()
+        hor_lay.addWidget(self.yes_button)
+        hor_lay.addWidget(self.no_button)
         layout.addWidget(self.check_item)
         layout.addWidget(self.label)
         layout.addLayout(hor_lay)
@@ -60,11 +70,12 @@ class AreYouSure(QtGui.QDialog):
         self.setWindowTitle("Exit")
         self.setWindowIcon(QtGui.QIcon(EXIT_ICO))
         self.label.setText("Are you sure to quit?")
-        self.yes.setText("Yes")
-        self.no.setText("No")
+        self.yes_button.setText("Yes")
+        self.no_button.setText("No")
         self.check_item.setText("Save e-mail/password")
 
     def exit(self):
+        """handle correct exit"""
         if self.check_item.isChecked():
             self.saved.emit()
         QtGui.QApplication.quit()
@@ -75,6 +86,7 @@ class AreYouSure(QtGui.QDialog):
 
 
 class WarningDialog(QtGui.QDialog):
+    """dialog for warnings - 'Connection Lost' etc"""
 
     def __init__(self, text):
         super(WarningDialog, self).__init__()
@@ -101,11 +113,13 @@ class WarningDialog(QtGui.QDialog):
 
 
 class MainWindow(QtGui.QMainWindow):
+    """main window"""
 
     def __init__(self, source='input'):
         super(MainWindow, self).__init__()
         self.source = source
         self.file_name = None
+        self.table = None
         self.initUI()
         self.setSizeUI()
         self.retranslateUI()
@@ -183,7 +197,10 @@ class MainWindow(QtGui.QMainWindow):
         self.setCentralWidget(self.main_widget)
 
     def setSizeUI(self):
-        self.input_word_edit.setFixedHeight(self.input_word_edit.sizeHint().height())
+        """prevents growing edit field"""
+        self.input_word_edit.setFixedHeight(
+            self.input_word_edit.sizeHint().height()
+            )
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Export to Lingualeo"))
@@ -205,44 +222,47 @@ class MainWindow(QtGui.QMainWindow):
         self.truncate_push.setText(self.tr("Truncate"))
 
     def checkState(self):
-        input = self.input_radio.isChecked()
+        input_state = self.input_radio.isChecked()
         text = self.text_radio.isChecked()
         kindle = self.kindle_radio.isChecked()
 
-        self.input_word_edit.setEnabled(input)
-        self.input_context_edit.setEnabled(input)
-        self.input_word_label.setEnabled(input)
-        self.input_context_label.setEnabled(input)
+        self.input_word_edit.setEnabled(input_state)
+        self.input_context_edit.setEnabled(input_state)
+        self.input_word_label.setEnabled(input_state)
+        self.input_context_label.setEnabled(input_state)
         self.text_push.setEnabled(text)
         self.text_path.setEnabled(text)
         self.kindle_push.setEnabled(kindle)
         self.kindle_path.setEnabled(kindle)
 
     def TextWrongFile(self):
-        basename, ext = os.path.splitext(self.file_name)
+        """handler for text file"""
+        _, ext = os.path.splitext(self.file_name)
         if ext != '.txt':
             return True
 
     def kindleEmpty(self):
-        db = sqlite3.connect(self.file_name)
-        cursor = db.cursor()
+        """handler for empty kindle database"""
+        database = sqlite3.connect(self.file_name)
+        cursor = database.cursor()
         data = cursor.execute("SELECT * FROM WORDS").fetchall()
         return len(data) == 0
 
     def kindleWrongDatabase(self):
-        basename, ext = os.path.splitext(self.file_name)
+        _, ext = os.path.splitext(self.file_name)
         print(ext)
         if ext != ".db":
             return True
         conn = sqlite3.connect(self.file_name)
         try:
             conn.execute("SELECT * FROM WORDS")
-        except:
+            return False
+        except Exception:
             return True
 
     def getSource(self):
         source = self.sender().text().lower()
-        if not 'kindle' in source:
+        if 'kindle' not in source:
             self.truncate_push.setEnabled(False)
         else:
             self.truncate_push.setEnabled(True)
@@ -261,7 +281,7 @@ class MainWindow(QtGui.QMainWindow):
         try:
             lingualeo.auth()
         # Handle no internet connection/no site connection
-        except ConnectionError:
+        except NoConnection:
             self.status_bar.showMessage(self.tr("No connection"))
             return
         # Handle wrong email/password
@@ -343,10 +363,12 @@ class MainWindow(QtGui.QMainWindow):
 
     def changeEditWidth(self):
         if 'email' in self.sender().objectName():
-            width_e = self.email_edit.fontMetrics().boundingRect(self.email_edit.text()).width() + 10
+            width_e = self.email_edit.fontMetrics().boundingRect(
+                self.email_edit.text()).width() + 10
             self.email_edit.setMinimumWidth(width_e)
         else:
-            width_p = self.pass_edit.fontMetrics().boundingRect(self.pass_edit.text()).width() + 10
+            width_p = self.pass_edit.fontMetrics().boundingRect(
+                self.pass_edit.text()).width() + 10
             self.pass_edit.setMinimumWidth(width_p)
 
     def initActions(self):
@@ -368,14 +390,18 @@ class MainWindow(QtGui.QMainWindow):
 
     def saveDefaults(self):
         '''save default email and password'''
-        self.settings = QtCore.QSettings(DEFAULT_NAME, QtCore.QSettings.IniFormat)
+        self.settings = QtCore.QSettings(
+            DEFAULT_NAME, QtCore.QSettings.IniFormat
+            )
         self.settings.setValue("email", self.email_edit.text())
         self.settings.setValue("password", self.pass_edit.text())
 
     def loadDefaults(self):
         '''load default email and password'''
         try:
-            self.settings = QtCore.QSettings("src.ini", QtCore.QSettings.IniFormat)
+            self.settings = QtCore.QSettings(
+                "src.ini", QtCore.QSettings.IniFormat
+                )
             email = self.settings.value("email")
             password = self.settings.value("password")
             self.email_edit.setText(email)
@@ -546,7 +572,7 @@ class ExportDialog(QtGui.QDialog):
                               "result": result,
                               "tword": translate['tword']})
 
-        except ConnectionError:
+        except NoConnection:
             self.startButton.click()
             warning = WarningDialog("No Internet Connection")
             warning.exec_()
@@ -560,7 +586,9 @@ class ExportDialog(QtGui.QDialog):
         if self.lingualeo.meatballs == 0:
             self.task.stop()
             self.progressBar.setValue(self.progressBar.maximum())
-            self.warning_info_label.setText(self.tr("No meatballs. Upload stopd"))           
+            self.warning_info_label.setText(
+                self.tr("No meatballs. Upload stopd")
+                )          
             self.finish()
             for i in self.table[self.value:]:
                 self.stat.append({"word": i['word'],
@@ -598,14 +626,14 @@ class StatisticsWindow(QtGui.QDialog):
             translate = QtGui.QTableWidgetItem(item.get("tword"))
             word.setBackground(brush)
             translate.setBackgroundColor(brush)
-            rowPosition = self.table.rowCount()
-            self.table.insertRow(rowPosition)
-            self.table.setItem(rowPosition, 0, word)
-            self.table.setItem(rowPosition, 1, translate)
+            row_position = self.table.rowCount()
+            self.table.insertRow(row_position)
+            self.table.setItem(row_position, 0, word)
+            self.table.setItem(row_position, 1, translate)
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         header = self.table.horizontalHeader()
         header.setStretchLastSection(True)
-        #self.table.resizeColumnsToContents()
+        # self.table.resizeColumnsToContents()
         total = len(self.stat)
         added = [i.get("result")=="New" for i in self.stat].count(True)
         not_added = [i.get("result") == "Not added" for i in self.stat].count(True)
@@ -633,8 +661,8 @@ def main():
     app = QtGui.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     # app.setQuitOnLastWindowClosed(False)
-    m = MainWindow()
-    m.show()
+    window = MainWindow()
+    window.show()
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
