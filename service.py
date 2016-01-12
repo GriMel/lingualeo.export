@@ -1,18 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import requests
-from requests.exceptions import ConnectionError
+
 
 LOGIN = "http://api.lingualeo.com/api/login"
 ADD_WORD = "http://api.lingualeo.com/addword"
 GET_TRANSLATE = "http://api.lingualeo.com/gettranslates?word="
 
 
-class Lingualeo:
+class Lingualeo(object):
+    """Lingualeo.com API class"""
 
     def __init__(self, email, password):
         self.email = email
         self.password = password
+        self.initUser()
+
+    def initUser(self):
         self.cookies = None
         self.premium = None
         self.meatballs = None
@@ -21,6 +25,7 @@ class Lingualeo:
         self.lvl = None
 
     def auth(self):
+        """authorization on lingualeo.com"""
         url = LOGIN
         values = {
             "email": self.email,
@@ -39,6 +44,7 @@ class Lingualeo:
         self.lvl = content['xp_level']
 
     def get_translate(self, word):
+        """get translation from lingualeo's API"""
         url = GET_TRANSLATE + word
         try:
             r = requests.get(url, cookies=self.cookies)
@@ -56,6 +62,7 @@ class Lingualeo:
                     "tword": "No translation"}
 
     def add_word(self, word, tword, context=""):
+        """add new word"""
         url = ADD_WORD
         values = {
             "word": word,
@@ -65,7 +72,9 @@ class Lingualeo:
         requests.post(url, values, cookies=self.cookies)
 
     def isPremium(self):
+        """tells if user has a premium status"""
         return self.premium
 
     def substractMeatballs(self):
+        """method for substracting meatballs"""
         self.meatballs -= 1

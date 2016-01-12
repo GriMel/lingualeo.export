@@ -406,7 +406,7 @@ class MainWindow(QtGui.QMainWindow):
             password = self.settings.value("password")
             self.email_edit.setText(email)
             self.pass_edit.setText(password)
-        except:
+        except Exception:
             pass
 
 
@@ -613,7 +613,7 @@ class StatisticsWindow(QtGui.QDialog):
         self.list_view = QtGui.QListWidget()
         self.table = QtGui.QTableWidget()
         self.table.setColumnCount(2)
-        for index, item in enumerate(self.stat):
+        for item in self.stat:
             if item.get("result") == "New":
                 brush = QtCore.Qt.green
             elif item.get("result") == "No translation":
@@ -622,7 +622,7 @@ class StatisticsWindow(QtGui.QDialog):
                 brush = QtCore.Qt.white
             else:
                 brush = QtCore.Qt.red
-            word =  QtGui.QTableWidgetItem(item.get("word"))
+            word = QtGui.QTableWidgetItem(item.get("word"))
             translate = QtGui.QTableWidgetItem(item.get("tword"))
             word.setBackground(brush)
             translate.setBackgroundColor(brush)
