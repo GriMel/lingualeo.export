@@ -7,15 +7,15 @@ Usage: python gui_export.py
 
 import sys
 import os
-from PyQt4 import QtCore, QtGui
-from word import Kindle, Text
-from service import Lingualeo
 import sqlite3
 import time
 from PyQt4 import QtCore, QtGui
 from requests.exceptions import ConnectionError as NoConnection
 from pydub import AudioSegment
 from pydub.playback import play
+from collections import Counter
+from word import Kindle, Text
+from service import Lingualeo
 
 # CONSTANTS
 DEFAULT_NAME = "src.ini"
@@ -635,9 +635,10 @@ class StatisticsWindow(QtGui.QDialog):
         header.setStretchLastSection(True)
         # self.table.resizeColumnsToContents()
         total = len(self.stat)
-        added = [i.get("result")=="New" for i in self.stat].count(True)
-        not_added = [i.get("result") == "Not added" for i in self.stat].count(True)
-        wrong = [i.get("result") == "No translation" for i in self.stat].count(True)
+        result = Counter(i["result"] for i in self.stat)
+        added = result["New"]
+        not_added = result["Not added"]
+        wrong = result["No translation"]
         exist = len(self.stat) - (added+not_added+wrong)
         added = added + wrong
 
