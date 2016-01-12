@@ -50,7 +50,7 @@ class Lingualeo:
                 "word": word,
                 "tword": tword
             }
-        except IndexError:
+        except (IndexError, KeyError):
             return {"is_exist": 0,
                     "word": word,
                     "tword": "No translation"}
