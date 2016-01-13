@@ -416,16 +416,47 @@ class WorkThread(QtCore.QThread):
 
     punched = QtCore.pyqtSignal(dict)
 
-    def __init__(self):
+    def __init__(self, lingualeo):
         super(WorkThread, self).__init__()
+        self.lingualeo = lingualeo
 
     def __del__(self):
         self.wait()
 
     def run(self):
-        for i in self.table:
-            self.punched.emit(i)
-            time.sleep(1)
+        result = None
+        row = None
+        data = None
+        for index, i in enumerate(self.table):
+            try:
+                word = i.get('word').lower()
+                context = i.get('context', '')
+                response = self.lingualeo.get_translate(word)
+                translate = response['tword']
+                exist = response['is_exist']
+                self.lingualeo.add_word(word,
+                                        translate,
+                                        context)
+                if exist:
+                    result = 'exist'
+                else:
+                    if translate == 'no translation':
+                        result = "no translation"
+                    else:
+                        result = "new"
+                row = {"word": word,
+                       "result": result,
+                       "tword": translate}
+                data = {"sent": True,
+                        "row": row,
+                        "index": index+1}
+            except NoConnection:
+                data = {"sent": False,
+                        "row": "",
+                        "index": ""}
+            finally:
+                self.punched.emit(data)
+            time.sleep(0.1)
 
     def stop(self):
         self.terminate()
@@ -442,7 +473,7 @@ class ExportDialog(QtGui.QDialog):
         self.table = table
         self.stat = list()
         self.value = 0
-        self.task = WorkThread()
+        self.task = WorkThread(lingualeo)
         self.task.getData(table)
         self.length = len(self.table)
         self.lingualeo = lingualeo
@@ -550,37 +581,23 @@ class ExportDialog(QtGui.QDialog):
         self.breakButton.setText(self.tr("Close"))
         self.startButton.hide()
 
-    def onProgress(self, i):
-        try:
-            row = i
-            word = row.get('word').lower()
-            context = row.get('context', '')
-            translate = self.lingualeo.get_translate(word)
-            self.lingualeo.add_word(translate['word'],
-                                    translate['tword'],
-                                    context)
-            if translate['is_exist']:
-                result = "Exist"
-            else:
-                if translate['tword'] == "No translation":
-                    result = "No translation"
-                else:
-                    result = "New"
+    def onProgress(self, data):
+        if data['sent']:
+            row = data['row']
+            if row['result'] != 'exist':
                 self.lingualeo.substractMeatballs()
-                meatballs = "Meatballs: {}".format(self.lingualeo.meatballs)
+                meatballs = "Meatballs: {}".format(
+                                self.lingualeo.meatballs
+                                )
                 self.meatballs_label.setText(meatballs)
-
-            self.stat.append({"word": word,
-                              "result": result,
-                              "tword": translate['tword']})
-
-        except NoConnection:
+        else:
             self.startButton.click()
-            warning = WarningDialog("No Internet Connection")
+            warning = WarningDialog(self.tr("No Internet Connection"))
             warning.exec_()
             return
 
-        self.value = self.table.index(i)+1
+        self.stat.append(data['row'])
+        self.value += 1
         self.label.setText("{} words processed out of {}".format(self.value,
                                                                  self.length))
         # initial value of progressBar is -1
@@ -590,11 +607,11 @@ class ExportDialog(QtGui.QDialog):
             self.progressBar.setValue(self.progressBar.maximum())
             self.warning_info_label.setText(
                 self.tr("No meatballs. Upload stopd")
-                )          
+                )
             self.finish()
             for i in self.table[self.value:]:
                 self.stat.append({"word": i['word'],
-                                  "result": "Not added",
+                                  "result": "not added",
                                   "tword": ""})
             return
 
@@ -616,11 +633,11 @@ class StatisticsWindow(QtGui.QDialog):
         self.table = QtGui.QTableWidget()
         self.table.setColumnCount(2)
         for item in self.stat:
-            if item.get("result") == "New":
+            if item.get("result") == "new":
                 brush = QtCore.Qt.green
-            elif item.get("result") == "No translation":
+            elif item.get("result") == "no translation":
                 brush = QtCore.Qt.orange
-            elif item.get("result") == "Not added":
+            elif item.get("result") == "not added":
                 brush = QtCore.Qt.white
             else:
                 brush = QtCore.Qt.red
@@ -638,9 +655,9 @@ class StatisticsWindow(QtGui.QDialog):
         # self.table.resizeColumnsToContents()
         total = len(self.stat)
         result = Counter(i["result"] for i in self.stat)
-        added = result["New"]
-        not_added = result["Not added"]
-        wrong = result["No translation"]
+        added = result["new"]
+        not_added = result["not added"]
+        wrong = result["no translation"]
         exist = len(self.stat) - (added+not_added+wrong)
         added = added + wrong
 
