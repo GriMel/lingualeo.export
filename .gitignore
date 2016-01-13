@@ -8,4 +8,6 @@ build/
 dist/
 *.spec
 new.py
-*.fuse
+Kindleo*
+*.js
+tests.py
