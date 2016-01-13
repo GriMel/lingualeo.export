@@ -10,20 +10,24 @@ import os
 import sqlite3
 import time
 from PyQt4 import QtCore, QtGui
-from requests.exceptions import ConnectionError as NoConnection
-from pydub import AudioSegment
-from pydub.playback import play
+from requests.exceptions import ConnectionError as NoConnection, Timeout
+
 from collections import Counter
 from word import Kindle, Text
 from service import Lingualeo
+'''
+from pydub import AudioSegment
+from pydub.playback import play
+'''
 
 # CONSTANTS
 DEFAULT_NAME = "src.ini"
 TESTS_NAME = "tests/"
-MAIN_ICO = "lingualeo.ico"
-EXPORT_ICO = "export.ico"
-STAT_ICO = "statistics.ico"
-EXIT_ICO = "exit.ico"
+MAIN_ICO = os.path.join("src", "pics", "lingualeo.ico")
+EXPORT_ICO = os.path.join("src", "pics", "export.ico")
+STAT_ICO = os.path.join("src", "pics", "statistics.ico")
+EXIT_ICO = os.path.join("src", "pics", "exit.ico")
+WARN_ICO = os.path.join("src", "pics", "warning.ico")
 WARN_ICO = "warning.ico"
 
 
@@ -434,26 +438,29 @@ class WorkThread(QtCore.QThread):
                 response = self.lingualeo.get_translate(word)
                 translate = response['tword']
                 exist = response['is_exist']
-                self.lingualeo.add_word(word,
-                                        translate,
-                                        context)
                 if exist:
                     result = 'exist'
                 else:
                     if translate == 'no translation':
                         result = "no translation"
+                        row = {"word": word,
+                               "result": result,
+                               "tword": translate}
                     else:
                         result = "new"
+                        self.lingualeo.add_word(word,
+                                                translate,
+                                                context)
                 row = {"word": word,
                        "result": result,
                        "tword": translate}
                 data = {"sent": True,
                         "row": row,
                         "index": index+1}
-            except NoConnection:
+            except (NoConnection, Timeout):
                 data = {"sent": False,
-                        "row": "",
-                        "index": ""}
+                        "row": None,
+                        "index": None}
             finally:
                 self.punched.emit(data)
             time.sleep(0.1)
@@ -636,7 +643,7 @@ class StatisticsWindow(QtGui.QDialog):
             if item.get("result") == "new":
                 brush = QtCore.Qt.green
             elif item.get("result") == "no translation":
-                brush = QtCore.Qt.orange
+                brush = QtCore.Qt.darkYellow
             elif item.get("result") == "not added":
                 brush = QtCore.Qt.white
             else:
@@ -658,8 +665,7 @@ class StatisticsWindow(QtGui.QDialog):
         added = result["new"]
         not_added = result["not added"]
         wrong = result["no translation"]
-        exist = len(self.stat) - (added+not_added+wrong)
-        added = added + wrong
+        exist = len(self.stat) - (added+not_added) - wrong
 
         self.label = QtGui.QLabel("""
             <center>Total: {}<br>

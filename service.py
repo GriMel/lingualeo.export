@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import requests
+from operator import itemgetter
+from collections import Counter
 
 LOGIN = "http://api.lingualeo.com/api/login"
 ADD_WORD = "http://api.lingualeo.com/addword"
@@ -9,6 +11,7 @@ GET_TRANSLATE = "http://api.lingualeo.com/gettranslates?word="
 
 class Lingualeo(object):
     """Lingualeo.com API class"""
+
     TIMEOUT = 5
 
     def __init__(self, email, password):
@@ -47,19 +50,29 @@ class Lingualeo(object):
         """get translation from lingualeo's API"""
         url = GET_TRANSLATE + word
         try:
-            r = requests.get(url, cookies=self.cookies, timeout=self.TIMEOUT)
-            translate = r.json()['translate'][0]
+            response = requests.get(url,
+                                    cookies=self.cookies,
+                                    timeout=self.TIMEOUT)
+            translate_list = response.json()['translate']
+            translate_list = sorted(translate_list,
+                                    key=itemgetter('votes'),
+                                    reverse=True)
+            translate = translate_list[0]
             tword = translate['value']
-            is_exist = translate['is_user']
+            is_exist = bool(translate['is_user'])
+            if not is_exist:
+                counter = Counter(i['is_user'] for i in translate_list)
+                if counter.get(1, 0) > 0:
+                    is_exist = True
             return {
                 "is_exist": is_exist,
                 "word": word,
                 "tword": tword
             }
         except (IndexError, KeyError):
-            return {"is_exist": 0,
+            return {"is_exist": False,
                     "word": word,
-                    "tword": "No translation"}
+                    "tword": "no translation"}
 
     def add_word(self, word, tword, context=""):
         """add new word"""
