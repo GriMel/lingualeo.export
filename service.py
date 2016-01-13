@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import requests
 
-
 LOGIN = "http://api.lingualeo.com/api/login"
 ADD_WORD = "http://api.lingualeo.com/addword"
 GET_TRANSLATE = "http://api.lingualeo.com/gettranslates?word="

@@ -81,8 +81,8 @@ class AreYouSure(QtGui.QDialog):
         QtGui.QApplication.quit()
 
     def initActions(self):
-        self.yes.clicked.connect(self.exit)
-        self.no.clicked.connect(self.close)
+        self.yes_button.clicked.connect(self.exit)
+        self.no_button.clicked.connect(self.close)
 
 
 class WarningDialog(QtGui.QDialog):
@@ -339,15 +339,17 @@ class MainWindow(QtGui.QMainWindow):
         if self.kindleEmpty():
             self.status_bar.showMessage(self.tr("File is empty"))
             return
-        reply = QtGui.QMessageBox.question(self, 'Message', 'Are you sure to truncate?',
-                                           QtGui.QMessageBox.Yes | QtGui.QMessageBox.No,
-                                           QtGui.QMessageBox.No)
+        reply = QtGui.QMessageBox.question(
+                    self, 'Message', 'Are you sure to truncate?',
+                    QtGui.QMessageBox.Yes | QtGui.QMessageBox.No,
+                    QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             conn = sqlite3.connect(self.file_name)
             with conn:
                 conn.execute("DELETE FROM WORDS;")
                 conn.execute("DELETE FROM LOOKUPS;")
-                conn.execute("UPDATE METADATA SET sscnt = 0 WHERE id in ('WORDS', 'LOOKUPS');")
+                conn.execute("UPDATE METADATA SET sscnt = 0\
+                                WHERE id in ('WORDS', 'LOOKUPS');")
                 conn.commit()
             self.status_bar.showMessage("Kindle database is empty")
         else:
