@@ -9,6 +9,7 @@ GET_TRANSLATE = "http://api.lingualeo.com/gettranslates?word="
 
 class Lingualeo(object):
     """Lingualeo.com API class"""
+    TIMEOUT = 5
 
     def __init__(self, email, password):
         self.email = email
@@ -30,7 +31,7 @@ class Lingualeo(object):
             "email": self.email,
             "password": self.password
         }
-        r = requests.get(url, values)
+        r = requests.get(url, values, timeout=self.TIMEOUT)
         self.cookies = r.cookies
         content = r.json()['user']
         self.premium = bool(content['premium_type'])
@@ -46,7 +47,7 @@ class Lingualeo(object):
         """get translation from lingualeo's API"""
         url = GET_TRANSLATE + word
         try:
-            r = requests.get(url, cookies=self.cookies)
+            r = requests.get(url, cookies=self.cookies, timeout=self.TIMEOUT)
             translate = r.json()['translate'][0]
             tword = translate['value']
             is_exist = translate['is_user']
@@ -68,7 +69,7 @@ class Lingualeo(object):
             "tword": tword,
             "context": context
         }
-        requests.post(url, values, cookies=self.cookies)
+        requests.post(url, values, cookies=self.cookies, timeout=self.TIMEOUT)
 
     def isPremium(self):
         """tells if user has a premium status"""
