@@ -40,10 +40,7 @@ def centerUI(self):
 
 
 def playSound(name):
-    """play sounds, e.g name='w.mp3'"""
-    song = AudioSegment.from_mp3(name)
-    song = song[:1500]
-    play(song)
+    pass
 
 
 class AreYouSure(QtGui.QDialog):
@@ -89,11 +86,11 @@ class AreYouSure(QtGui.QDialog):
         self.no_button.clicked.connect(self.close)
 
 
-class WarningDialog(QtGui.QDialog):
-    """dialog for warnings - 'Connection Lost' etc"""
+class NotificationDialog(QtGui.QDialog):
+    """dialog for notifications - 'Connection Lost' etc"""
 
     def __init__(self, text):
-        super(WarningDialog, self).__init__()
+        super(NotificationDialog, self).__init__()
         self.text = text
         self.initUI()
         self.retranslateUI()
@@ -254,7 +251,6 @@ class MainWindow(QtGui.QMainWindow):
 
     def kindleWrongDatabase(self):
         _, ext = os.path.splitext(self.file_name)
-        print(ext)
         if ext != ".db":
             return True
         conn = sqlite3.connect(self.file_name)
@@ -270,9 +266,11 @@ class MainWindow(QtGui.QMainWindow):
             self.truncate_push.setEnabled(False)
         else:
             self.truncate_push.setEnabled(True)
-        print(self.sender().text().lower())
         self.source = source
         self.checkState()
+
+    def clearMessage(self):
+        self.status_bar.showMessage("")
 
     def export(self):
         """kidle/input/word"""
@@ -285,12 +283,13 @@ class MainWindow(QtGui.QMainWindow):
         try:
             lingualeo.auth()
         # Handle no internet connection/no site connection
-        except NoConnection:
+        except (NoConnection, Timeout):
             self.status_bar.showMessage(self.tr("No connection"))
             return
         # Handle wrong email/password
         except KeyError:
             self.status_bar.showMessage(self.tr("Email or password is incorrect"))
+            return
 
         if kindle:
             self.file_name = self.kindle_path.text()
@@ -312,7 +311,7 @@ class MainWindow(QtGui.QMainWindow):
             if lingualeo.meatballs == 0:
                 self.status_bar.showMessage(self.tr("No meatballs"))
                 return
-
+            self.status_bar.showMessage(self.tr("Kindle > Lingualeo"))
             handler = Kindle(self.file_name)
             handler.read()
             self.table = handler.get()
@@ -322,11 +321,13 @@ class MainWindow(QtGui.QMainWindow):
             if self.TextWrongFile():
                 self.status_bar.showMessage(self.tr("Not txt file"))
                 return
+            self.status_bar.showMessage(self.tr("Txt > Lingualeo"))
             self.file_name = self.text_path.text()
             handler = Text(self.file_name)
             handler.read()
             self.table = handler.get()
         else:
+            self.status_bar.showMessage(self.tr("Input > Lingualeo"))
             word = self.input_word_edit.text().lower()
             context = self.input_context_edit.text()
             if not word:
@@ -334,8 +335,9 @@ class MainWindow(QtGui.QMainWindow):
                 return
             self.table = [{'word': word, 'context': context}]
 
-        p = ExportDialog(self.table, lingualeo)
-        p.exec_()
+        dialog = ExportDialog(self.table, lingualeo)
+        dialog.closed.connect(self.clearMessage)
+        dialog.exec_()
 
     def truncate(self):
         """truncate kindle database"""
@@ -474,6 +476,8 @@ class WorkThread(QtCore.QThread):
 
 class ExportDialog(QtGui.QDialog):
 
+    closed = QtCore.pyqtSignal()
+
     def __init__(self, table, lingualeo):
 
         super(ExportDialog, self).__init__()
@@ -569,6 +573,7 @@ class ExportDialog(QtGui.QDialog):
         self.task.stop()
         s = StatisticsWindow(self.stat)
         s.exec_()
+        self.closed.emit()
 
     def changeTask(self):
         if self.sender().text() == "Start":
@@ -589,6 +594,7 @@ class ExportDialog(QtGui.QDialog):
         self.startButton.hide()
 
     def onProgress(self, data):
+
         if data['sent']:
             row = data['row']
             if row['result'] != 'exist':
@@ -599,7 +605,8 @@ class ExportDialog(QtGui.QDialog):
                 self.meatballs_label.setText(meatballs)
         else:
             self.startButton.click()
-            warning = WarningDialog(self.tr("No Internet Connection"))
+            #playSound(os.path.join("src", "sounds", "warning.mp3"))
+            warning = NotificationDialog(self.tr("No Internet Connection"))
             warning.exec_()
             return
 
