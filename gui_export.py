@@ -13,6 +13,7 @@ from PyQt4 import QtCore, QtGui
 from requests.exceptions import ConnectionError as NoConnection, Timeout
 
 from collections import Counter
+from operator import itemgetter
 from word import Kindle, Text
 from service import Lingualeo
 '''
@@ -120,7 +121,7 @@ class MainWindow(QtGui.QMainWindow):
         super(MainWindow, self).__init__()
         self.source = source
         self.file_name = None
-        self.table = None
+        self.array = None
         self.initUI()
         self.setSizeUI()
         self.retranslateUI()
@@ -314,7 +315,7 @@ class MainWindow(QtGui.QMainWindow):
             self.status_bar.showMessage(self.tr("Kindle > Lingualeo"))
             handler = Kindle(self.file_name)
             handler.read()
-            self.table = handler.get()
+            self.array = handler.get()
 
         elif text:
             self.file_name = self.text_path.text()
@@ -325,7 +326,7 @@ class MainWindow(QtGui.QMainWindow):
             self.file_name = self.text_path.text()
             handler = Text(self.file_name)
             handler.read()
-            self.table = handler.get()
+            self.array = handler.get()
         else:
             self.status_bar.showMessage(self.tr("Input > Lingualeo"))
             word = self.input_word_edit.text().lower()
@@ -333,7 +334,7 @@ class MainWindow(QtGui.QMainWindow):
             if not word:
                 self.status_bar.showMessage(self.tr("No word"))
                 return
-            self.table = [{'word': word, 'context': context}]
+            self.array = [{'word': word, 'context': context}]
 
         dialog = ExportDialog(self.table, lingualeo)
         dialog.closed.connect(self.clearMessage)
@@ -433,7 +434,7 @@ class WorkThread(QtCore.QThread):
         result = None
         row = None
         data = None
-        for index, i in enumerate(self.table):
+        for index, i in enumerate(self.array):
             try:
                 word = i.get('word').lower()
                 context = i.get('context', '')
@@ -447,15 +448,17 @@ class WorkThread(QtCore.QThread):
                         result = "no translation"
                         row = {"word": word,
                                "result": result,
-                               "tword": translate}
+                               "tword": translate,
+                               "context": context}
                     else:
-                        result = "new"
+                        result = "added"
                         self.lingualeo.add_word(word,
                                                 translate,
                                                 context)
                 row = {"word": word,
                        "result": result,
-                       "tword": translate}
+                       "tword": translate,
+                       "context": context}
                 data = {"sent": True,
                         "row": row,
                         "index": index+1}
@@ -470,23 +473,23 @@ class WorkThread(QtCore.QThread):
     def stop(self):
         self.terminate()
 
-    def getData(self, table, index=0):
-        self.table = table[index:]
+    def getData(self, array, index=0):
+        self.array = array[index:]
 
 
 class ExportDialog(QtGui.QDialog):
 
     closed = QtCore.pyqtSignal()
 
-    def __init__(self, table, lingualeo):
+    def __init__(self, array, lingualeo):
 
         super(ExportDialog, self).__init__()
-        self.table = table
+        self.array = array
         self.stat = list()
         self.value = 0
         self.task = WorkThread(lingualeo)
-        self.task.getData(table)
-        self.length = len(self.table)
+        self.task.getData(array)
+        self.length = len(self.array)
         self.lingualeo = lingualeo
         self.initUI()
         self.retranslateUI()
@@ -499,14 +502,23 @@ class ExportDialog(QtGui.QDialog):
 
         info_layout = QtGui.QVBoxLayout()
         self.avatar_label = QtGui.QLabel()
-        self.fname_label = QtGui.QLabel()
-        self.lvl_label = QtGui.QLabel()
-        self.meatballs_label = QtGui.QLabel()
+
+        info_grid_layout = QtGui.QGridLayout()
+        self.fname_title_label = QtGui.QLabel()
+        self.fname_value_label = QtGui.QLabel()
+        info_grid_layout.addWidget(self.fname_title_label, 0, 0)
+        info_grid_layout.addWidget(self.fname_value_label, 0, 1)
+        self.lvl_title_label = QtGui.QLabel()
+        self.lvl_value_label = QtGui.QLabel()
+        info_grid_layout.addWidget(self.lvl_title_label, 1, 0)
+        info_grid_layout.addWidget(self.lvl_value_label, 1, 1)
+        self.meatballs_title_label = QtGui.QLabel()
+        self.meatballs_value_label = QtGui.QLabel()
+        info_grid_layout.addWidget(self.meatballs_title_label, 2, 0)
+        info_grid_layout.addWidget(self.meatballs_value_label, 2, 1)
 
         info_layout.addWidget(self.avatar_label)
-        info_layout.addWidget(self.fname_label)
-        info_layout.addWidget(self.lvl_label)
-        info_layout.addWidget(self.meatballs_label)
+        info_layout.addLayout(info_grid_layout)
 
         warning_layout = QtGui.QHBoxLayout()
         self.warning_info_label = QtGui.QLabel()
@@ -541,17 +553,18 @@ class ExportDialog(QtGui.QDialog):
         self.avatar_label.setPixmap(avatar)
         self.avatar_label.setScaledContents(True)
 
-        fname = "Name: {}".format(self.lingualeo.fname)
-        self.fname_label.setText(fname)
+        # INFO GRID
+        self.fname_title_label.setText(self.tr("Name:"))
+        self.fname_value_label.setText(self.lingualeo.fname)
 
-        lvl = "Lvl: {}".format(self.lingualeo.lvl)
-        self.lvl_label.setText(lvl)
+        self.lvl_title_label.setText(self.tr("Lvl:"))
+        self.lvl_value_label.setText(str(self.lingualeo.lvl))
 
-        meatballs = "Meatballs: {}".format(self.lingualeo.meatballs)
-        self.meatballs_label.setText(meatballs)
+        self.meatballs_title_label.setText(self.tr("Meatballs:"))
+        self.meatballs_value_label.setText(str(self.lingualeo.meatballs))
 
         if self.lingualeo.meatballs < self.length:
-            self.warning_info_label.setText("WARNING: Meatballs < Words")
+            self.warning_info_label.setText(self.tr("WARNING: Meatballs < words"))
             self.warning_info_label.setStyleSheet("color:red")
         self.setWindowTitle(self.tr("Preparing to export"))
         self.startButton.setText(self.tr("Start"))
@@ -581,7 +594,7 @@ class ExportDialog(QtGui.QDialog):
             self.breakButton.show()
             self.setWindowTitle(self.tr("Processing..."))
             if self.value > 0:
-                self.task.getData(self.table, self.value)
+                self.task.getData(self.array, self.value)
             self.task.start()
         else:
             self.task.stop()
@@ -597,15 +610,13 @@ class ExportDialog(QtGui.QDialog):
 
         if data['sent']:
             row = data['row']
-            if row['result'] != 'exist':
+            if row['result'] == 'added':
                 self.lingualeo.substractMeatballs()
-                meatballs = "Meatballs: {}".format(
-                                self.lingualeo.meatballs
-                                )
-                self.meatballs_label.setText(meatballs)
+                self.meatballs_value_label.setText(
+                    str(self.lingualeo.meatballs))
         else:
             self.startButton.click()
-            #playSound(os.path.join("src", "sounds", "warning.mp3"))
+            # playSound(os.path.join("src", "sounds", "warning.mp3"))
             warning = NotificationDialog(self.tr("No Internet Connection"))
             warning.exec_()
             return
@@ -620,13 +631,14 @@ class ExportDialog(QtGui.QDialog):
             self.task.stop()
             self.progressBar.setValue(self.progressBar.maximum())
             self.warning_info_label.setText(
-                self.tr("No meatballs. Upload stopd")
+                self.tr("No meatballs. Upload stopped")
                 )
             self.finish()
-            for i in self.table[self.value:]:
+            for i in self.array[self.value:]:
                 self.stat.append({"word": i['word'],
                                   "result": "not added",
-                                  "tword": ""})
+                                  "tword": "",
+                                  "context": i['context']})
             return
 
         if (self.progressBar.value() == self.progressBar.maximum()):
@@ -645,46 +657,75 @@ class StatisticsWindow(QtGui.QDialog):
 
         self.list_view = QtGui.QListWidget()
         self.table = QtGui.QTableWidget()
-        self.table.setColumnCount(2)
-        for item in self.stat:
-            if item.get("result") == "new":
+        self.table.setColumnCount(3)
+        stat = sorted(self.stat, key=itemgetter('result'))
+        for item in stat:
+            if item.get("result") == "added":
                 brush = QtCore.Qt.green
             elif item.get("result") == "no translation":
-                brush = QtCore.Qt.darkYellow
+                brush = QtCore.Qt.yellow
             elif item.get("result") == "not added":
                 brush = QtCore.Qt.white
             else:
                 brush = QtCore.Qt.red
             word = QtGui.QTableWidgetItem(item.get("word"))
             translate = QtGui.QTableWidgetItem(item.get("tword"))
-            word.setBackground(brush)
+            context = QtGui.QTableWidgetItem(item.get('context'))
+            word.setBackgroundColor(brush)
             translate.setBackgroundColor(brush)
+            context.setBackgroundColor(brush)
             row_position = self.table.rowCount()
             self.table.insertRow(row_position)
             self.table.setItem(row_position, 0, word)
             self.table.setItem(row_position, 1, translate)
+            self.table.setItem(row_position, 2, context)
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         header = self.table.horizontalHeader()
         header.setStretchLastSection(True)
         # self.table.resizeColumnsToContents()
+        # self.label.setStyleSheet("background-color:red")
+        grid = self.createGrid()
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addLayout(grid)
+        self.layout.addWidget(self.table)
+        self.setLayout(self.layout)
+
+    def createGrid(self):
+
         total = len(self.stat)
         result = Counter(i["result"] for i in self.stat)
         added = result["new"]
         not_added = result["not added"]
         wrong = result["no translation"]
         exist = len(self.stat) - (added+not_added) - wrong
+        grid = QtGui.QGridLayout()
 
-        self.label = QtGui.QLabel("""
-            <center>Total: {}<br>
-             Added: {}<br>
-             Not added: {}<br>
-             No translation: {}<br>
-             Exist: {}</center>
-            """.format(total, added, not_added, wrong, exist))
-        self.layout = QtGui.QVBoxLayout()
-        self.layout.addWidget(self.label)
-        self.layout.addWidget(self.table)
-        self.setLayout(self.layout)
+        data = [
+                {"text": self.tr("Total"),
+                 "value": total,
+                 "color": ""},
+                {"text": self.tr("Added"),
+                 "value": added,
+                 "color": "green"},
+                {"text": self.tr("Exist"),
+                 "value": exist,
+                 "color": "red"},
+                {"text": self.tr("No translation"),
+                 "value": wrong, "color": "yellow"},
+                {"text": self.tr("Not added"),
+                 "value": not_added,
+                 "color": "white"}
+               ]
+        for index, i in enumerate(data):
+            color_label = QtGui.QLabel()
+            color_label.setStyleSheet("background-color:{}".format(i['color']))
+            text_label = QtGui.QLabel()
+            text_label.setText("{0}: {1}".format(i['text'], i['value']))
+
+            grid.addWidget(color_label, index, 0)
+            grid.addWidget(text_label, index, 1)
+
+        return grid
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Statistics"))
