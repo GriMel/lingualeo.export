@@ -231,7 +231,7 @@ class MainWindow(QtGui.QMainWindow):
 
         self.text_radio.setText(self.tr("Text"))
         self.text_push.setText(self.tr("Path"))
-        
+
         self.kindle_radio.setText(self.tr("Kindle"))
         self.kindle_push.setText(self.tr("Path"))
 
@@ -567,17 +567,17 @@ class ExportDialog(QtGui.QDialog):
         progress_layout = QtGui.QVBoxLayout()
         hor_layout = QtGui.QHBoxLayout()
         self.label = QtGui.QLabel()
-        self.progressBar = QtGui.QProgressBar(self)
-        self.progressBar.setRange(0, self.length)
-        self.startButton = QtGui.QPushButton()
-        self.startButton.setObjectName("start")
-        self.breakButton = QtGui.QPushButton()
-        self.breakButton.setObjectName("break")
+        self.progress_bar = QtGui.QProgressBar(self)
+        self.progress_bar.setRange(0, self.length)
+        self.start_button = QtGui.QPushButton()
+        self.start_button.setObjectName("start")
+        self.break_button = QtGui.QPushButton()
+        self.break_button.setObjectName("break")
 
         progress_layout.addWidget(self.label)
-        progress_layout.addWidget(self.progressBar)
-        hor_layout.addWidget(self.startButton)
-        hor_layout.addWidget(self.breakButton)
+        progress_layout.addWidget(self.progress_bar)
+        hor_layout.addWidget(self.start_button)
+        hor_layout.addWidget(self.break_button)
         progress_layout.addLayout(hor_layout)
 
         layout.addLayout(info_layout)
@@ -585,7 +585,7 @@ class ExportDialog(QtGui.QDialog):
         layout.addLayout(progress_layout)
 
         self.setLayout(layout)
-        self.breakButton.hide()
+        self.break_button.hide()
 
     def retranslateUI(self):
 
@@ -609,13 +609,13 @@ class ExportDialog(QtGui.QDialog):
             self.warning_info_label.setText(self.tr("WARNING: Meatballs < words"))
             self.warning_info_label.setStyleSheet("color:red")
         self.setWindowTitle(self.tr("Preparing to export"))
-        self.startButton.setText(self.tr("Start"))
-        self.breakButton.setText(self.tr("Break"))
+        self.start_button.setText(self.tr("Start"))
+        self.break_button.setText(self.tr("Break"))
 
     def initActions(self):
-        self.startButton.clicked.connect(self.changeTask)
-        self.breakButton.clicked.connect(self.task.stop)
-        self.breakButton.clicked.connect(self.close)
+        self.start_button.clicked.connect(self.changeTask)
+        self.break_button.clicked.connect(self.task.stop)
+        self.break_button.clicked.connect(self.close)
         self.task.punched.connect(self.onProgress)
 
     def keyPressEvent(self, event):
@@ -632,23 +632,23 @@ class ExportDialog(QtGui.QDialog):
 
     def changeTask(self):
         if self.sender().objectName() == "start":
-            self.startButton.setText(self.tr("Stop"))
-            self.startButton.setObjectName("stop")
-            self.breakButton.show()
+            self.start_button.setText(self.tr("Stop"))
+            self.start_button.setObjectName("stop")
+            self.break_button.show()
             self.setWindowTitle(self.tr("Processing..."))
             if self.value > 0:
                 self.task.getData(self.array, self.value)
             self.task.start()
         else:
             self.task.stop()
-            self.startButton.setText(self.tr("Start"))
-            self.startButton.setObjectName("start")
-            self.breakButton.hide()
+            self.start_button.setText(self.tr("Start"))
+            self.start_button.setObjectName("start")
+            self.break_button.hide()
 
     def finish(self):
         self.label.setText(self.tr("Finished"))
-        self.breakButton.setText(self.tr("Close"))
-        self.startButton.hide()
+        self.break_button.setText(self.tr("Close"))
+        self.start_button.hide()
 
     def onProgress(self, data):
 
@@ -659,7 +659,7 @@ class ExportDialog(QtGui.QDialog):
                 self.meatballs_value_label.setText(
                     str(self.lingualeo.meatballs))
         else:
-            self.startButton.click()
+            self.start_button.click()
             # playSound(os.path.join("src", "sounds", "warning.mp3"))
             warning = NotificationDialog(self.tr("No Internet Connection"))
             warning.exec_()
@@ -670,10 +670,10 @@ class ExportDialog(QtGui.QDialog):
         self.label.setText("{} words processed out of {}".format(self.value,
                                                                  self.length))
         # initial value of progressBar is -1
-        self.progressBar.setValue(self.value)
+        self.progress_bar.setValue(self.value)
         if self.lingualeo.meatballs == 0:
             self.task.stop()
-            self.progressBar.setValue(self.progressBar.maximum())
+            self.progress_bar.setValue(self.progress_bar.maximum())
             self.warning_info_label.setText(
                 self.tr("No meatballs. Upload stopped")
                 )
@@ -685,7 +685,7 @@ class ExportDialog(QtGui.QDialog):
                                   "context": i['context']})
             return
 
-        if (self.progressBar.value() == self.progressBar.maximum()):
+        if self.progress_bar.value() == self.progress_bar.maximum():
             self.finish()
 
 
@@ -694,7 +694,7 @@ class StatisticsWindow(QtGui.QDialog):
     ICON_FILE = os.path.join("src", "pics", "statistics.ico")
 
     def __init__(self, stat):
-        super(QtGui.QDialog, self).__init__()
+        super(StatisticsWindow, self).__init__()
         self.stat = stat
         self.initUI()
         self.retranslateUI()
