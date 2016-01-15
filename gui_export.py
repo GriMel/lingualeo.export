@@ -158,6 +158,7 @@ class MainWindow(QtGui.QMainWindow):
         self.main_label = QtGui.QLabel()
 
         self.input_radio = QtGui.QRadioButton()
+        self.input_radio.setObjectName("input")
         self.input_radio.setChecked(True)
         self.input_word_label = QtGui.QLabel()
         self.input_context_label = QtGui.QLabel()
@@ -169,6 +170,7 @@ class MainWindow(QtGui.QMainWindow):
         self.input_layout.addWidget(self.input_context_label, 1, 0, 1, 1)
         self.input_layout.addWidget(self.input_context_edit, 1, 1, 1, 1)
         self.text_radio = QtGui.QRadioButton()
+        self.text_radio.setObjectName("text")
         self.text_push = QtGui.QPushButton()
         self.text_path = QtGui.QLineEdit()
         self.text_path.setReadOnly(True)
@@ -177,6 +179,7 @@ class MainWindow(QtGui.QMainWindow):
         self.text_layout.addWidget(self.text_path)
 
         self.kindle_radio = QtGui.QRadioButton()
+        self.kindle_radio.setObjectName("kindle")
         self.kindle_push = QtGui.QPushButton()
         self.kindle_path = QtGui.QLineEdit()
         self.kindle_path.setReadOnly(True)
@@ -228,7 +231,7 @@ class MainWindow(QtGui.QMainWindow):
 
         self.text_radio.setText(self.tr("Text"))
         self.text_push.setText(self.tr("Path"))
-
+        
         self.kindle_radio.setText(self.tr("Kindle"))
         self.kindle_push.setText(self.tr("Path"))
 
@@ -248,6 +251,9 @@ class MainWindow(QtGui.QMainWindow):
         self.text_path.setEnabled(text)
         self.kindle_push.setEnabled(kindle)
         self.kindle_path.setEnabled(kindle)
+
+    def TextEmpty(self):
+        return os.stat(self.file_name).st_size == 0
 
     def TextWrongFile(self):
         """handler for text file"""
@@ -274,7 +280,7 @@ class MainWindow(QtGui.QMainWindow):
             return True
 
     def getSource(self):
-        source = self.sender().text().lower()
+        source = self.sender().objectName()
         if 'kindle' not in source:
             self.truncate_push.setEnabled(False)
         else:
@@ -303,6 +309,10 @@ class MainWindow(QtGui.QMainWindow):
         except KeyError:
             self.status_bar.showMessage(self.tr("Email or password is incorrect"))
             return
+        # Handle zero meatballs
+        if lingualeo.meatballs == 0:
+            self.status_bar.showMessage(self.tr("No meatballs"))
+            return
 
         if kindle:
             self.file_name = self.kindle_path.text()
@@ -318,12 +328,9 @@ class MainWindow(QtGui.QMainWindow):
 
             # Handle empty database
             if self.kindleEmpty():
-                self.status_bar.showMessage(self.tr("Base is empty"))
+                self.status_bar.showMessage(self.tr("Kindle database is empty"))
                 return
             # Handle 0 meatballs
-            if lingualeo.meatballs == 0:
-                self.status_bar.showMessage(self.tr("No meatballs"))
-                return
             self.status_bar.showMessage(self.tr("Kindle > Lingualeo"))
             handler = Kindle(self.file_name)
             handler.read()
@@ -334,6 +341,8 @@ class MainWindow(QtGui.QMainWindow):
             if self.TextWrongFile():
                 self.status_bar.showMessage(self.tr("Not txt file"))
                 return
+            if self.TextEmpty():
+                self.status_bar.showMessage(self.tr("Txt file is empty"))
             self.status_bar.showMessage(self.tr("Txt > Lingualeo"))
             self.file_name = self.text_path.text()
             handler = Text(self.file_name)
@@ -355,8 +364,11 @@ class MainWindow(QtGui.QMainWindow):
     def truncate(self):
         """truncate kindle database"""
         self.file_name = self.kindle_path.text()
+        if not self.file_name:
+            self.status_bar.showMessage(self.tr("No Kindle database"))
+            return
         if self.kindleEmpty():
-            self.status_bar.showMessage(self.tr("File is empty"))
+            self.status_bar.showMessage(self.tr("Kindle database is empty"))
             return
         reply = QtGui.QMessageBox.question(
                     self, 'Message', 'Are you sure to truncate?',
@@ -370,7 +382,7 @@ class MainWindow(QtGui.QMainWindow):
                 conn.execute("UPDATE METADATA SET sscnt = 0\
                                 WHERE id in ('WORDS', 'LOOKUPS');")
                 conn.commit()
-            self.status_bar.showMessage("Kindle database is empty")
+            self.status_bar.showMessage(self.tr("Kindle database is empty"))
         else:
             return
 
@@ -410,6 +422,7 @@ class MainWindow(QtGui.QMainWindow):
         if self.sender():
             self.language = self.sender().objectName()
         path = os.path.join("src", "lang", "qt_"+self.language)
+        # it's important to use 'self' here - don't know why
         self.language_translator.load(path)
         app.installTranslator(self.language_translator)
         self.retranslateUI()
@@ -417,7 +430,7 @@ class MainWindow(QtGui.QMainWindow):
     def saveDefaults(self, save_email):
         '''save default email and password'''
         self.settings = QtCore.QSettings(
-            SRC, QtCore.QSettings.IniFormat
+            self.SRC, QtCore.QSettings.IniFormat
             )
         if save_email:
             self.settings.setValue("email", self.email_edit.text())
@@ -429,7 +442,7 @@ class MainWindow(QtGui.QMainWindow):
         '''load default email/password and language'''
         try:
             self.settings = QtCore.QSettings(
-                SRC, QtCore.QSettings.IniFormat
+                self.SRC, QtCore.QSettings.IniFormat
                 )
             email = self.settings.value("email")
             password = self.settings.value("password")
@@ -447,6 +460,7 @@ class MainWindow(QtGui.QMainWindow):
         a.saved.connect(self.saveDefaults)
         a.exec_()
         event.ignore()
+
 
 class WorkThread(QtCore.QThread):
 
@@ -474,11 +488,8 @@ class WorkThread(QtCore.QThread):
                     result = 'exist'
                 else:
                     if translate == 'no translation':
+                        translate = ""
                         result = "no translation"
-                        row = {"word": word,
-                               "result": result,
-                               "tword": translate,
-                               "context": context}
                     else:
                         result = "added"
                         self.lingualeo.add_word(word,
@@ -559,7 +570,9 @@ class ExportDialog(QtGui.QDialog):
         self.progressBar = QtGui.QProgressBar(self)
         self.progressBar.setRange(0, self.length)
         self.startButton = QtGui.QPushButton()
+        self.startButton.setObjectName("start")
         self.breakButton = QtGui.QPushButton()
+        self.breakButton.setObjectName("break")
 
         progress_layout.addWidget(self.label)
         progress_layout.addWidget(self.progressBar)
@@ -580,7 +593,7 @@ class ExportDialog(QtGui.QDialog):
         avatar = QtGui.QPixmap()
         avatar.loadFromData(self.lingualeo.avatar)
         self.avatar_label.setPixmap(avatar)
-        self.avatar_label.setScaledContents(True)
+        # self.avatar_label.setScaledContents(True)
 
         # INFO GRID
         self.fname_title_label.setText(self.tr("Name:"))
@@ -618,8 +631,9 @@ class ExportDialog(QtGui.QDialog):
         self.closed.emit()
 
     def changeTask(self):
-        if self.sender().text() == "Start":
+        if self.sender().objectName() == "start":
             self.startButton.setText(self.tr("Stop"))
+            self.startButton.setObjectName("stop")
             self.breakButton.show()
             self.setWindowTitle(self.tr("Processing..."))
             if self.value > 0:
@@ -628,6 +642,7 @@ class ExportDialog(QtGui.QDialog):
         else:
             self.task.stop()
             self.startButton.setText(self.tr("Start"))
+            self.startButton.setObjectName("start")
             self.breakButton.hide()
 
     def finish(self):
@@ -710,6 +725,7 @@ class StatisticsWindow(QtGui.QDialog):
             self.table.setItem(row_position, 1, translate)
             self.table.setItem(row_position, 2, context)
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.table.resizeRowsToContents()
         header = self.table.horizontalHeader()
         header.setStretchLastSection(True)
         # self.table.resizeColumnsToContents()
@@ -719,7 +735,6 @@ class StatisticsWindow(QtGui.QDialog):
         self.layout.addLayout(grid)
         self.layout.addWidget(self.table)
         self.setLayout(self.layout)
-
     def createGrid(self):
 
         total = len(self.stat)
@@ -757,8 +772,11 @@ class StatisticsWindow(QtGui.QDialog):
 
         return grid
 
+    def resizeEvent(self, event):
+        self.table.resizeRowsToContents()
+
     def retranslateUI(self):
-        self.setWindowIcon(self.ICON_FILE)
+        self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.setWindowTitle(self.tr("Statistics"))
 
 
