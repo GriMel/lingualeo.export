@@ -46,7 +46,7 @@ def playSound(name):
 
 class AreYouSure(QtGui.QDialog):
     """exit dialog"""
-    saved = QtCore.pyqtSignal()
+    saved = QtCore.pyqtSignal(bool)
 
     def __init__(self):
         super(AreYouSure, self).__init__()
@@ -69,17 +69,17 @@ class AreYouSure(QtGui.QDialog):
         self.setLayout(layout)
 
     def retranslateUI(self):
-        self.setWindowTitle("Exit")
+        self.setWindowTitle(self.tr("Exit"))
         self.setWindowIcon(QtGui.QIcon(EXIT_ICO))
-        self.label.setText("Are you sure to quit?")
-        self.yes_button.setText("Yes")
-        self.no_button.setText("No")
-        self.check_item.setText("Save e-mail/password")
+        self.label.setText(self.tr("Are you sure to quit?"))
+        self.yes_button.setText(self.tr("Yes"))
+        self.no_button.setText(self.tr("No"))
+        self.check_item.setText(self.tr("Save e-mail/password"))
 
     def exit(self):
         """handle correct exit"""
-        if self.check_item.isChecked():
-            self.saved.emit()
+        save_email = self.check_item.isChecked()
+        self.saved.emit(save_email)
         QtGui.QApplication.quit()
 
     def initActions(self):
@@ -120,19 +120,31 @@ class MainWindow(QtGui.QMainWindow):
     def __init__(self, source='input'):
         super(MainWindow, self).__init__()
         self.source = source
+        self.language = "en"
         self.file_name = None
         self.array = None
         self.initUI()
         self.setSizeUI()
-        self.retranslateUI()
+        self.loadDefaults()
+        self.loadTranslation()
         centerUI(self)
         self.checkState()
         self.initActions()
-        self.loadDefaults()
+
+    def initLangLayout(self):
+        layout = QtGui.QHBoxLayout()
+        for i in ("EN", "RU", "UA"):
+            button = QtGui.QPushButton(i)
+            button.setObjectName(i.lower())
+            button.clicked.connect(self.loadTranslation)
+            layout.addWidget(button)
+        return layout
 
     def initUI(self):
         self.main_widget = QtGui.QWidget(self)
         self.main_layout = QtGui.QVBoxLayout()
+
+        self.lang_layout = self.initLangLayout()
         self.auth_layout = QtGui.QGridLayout()
         self.auth_label = QtGui.QLabel()
         self.email_label = QtGui.QLabel()
@@ -177,10 +189,13 @@ class MainWindow(QtGui.QMainWindow):
 
         self.export_push = QtGui.QPushButton()
         self.truncate_push = QtGui.QPushButton()
+        self.truncate_push.setEnabled(False)
         self.bottom_layout = QtGui.QHBoxLayout()
         self.bottom_layout.addWidget(self.export_push)
         self.bottom_layout.addWidget(self.truncate_push)
 
+        self.main_layout.addLayout(self.lang_layout)
+        self.main_layout.addStretch(1)
         self.main_layout.addLayout(self.auth_layout)
         self.main_layout.addWidget(self.main_label)
         self.main_layout.addWidget(self.input_radio)
@@ -208,7 +223,7 @@ class MainWindow(QtGui.QMainWindow):
         self.setWindowTitle(self.tr("Export to Lingualeo"))
         self.setWindowIcon(QtGui.QIcon(MAIN_ICO))
         self.email_label.setText("e-mail")
-        self.pass_label.setText('password')
+        self.pass_label.setText("password")
         self.main_label.setText(self.tr("<center>Choose the source</center>"))
         self.input_radio.setText(self.tr("Input"))
         self.input_word_label.setText(self.tr("word"))
@@ -336,7 +351,7 @@ class MainWindow(QtGui.QMainWindow):
                 return
             self.array = [{'word': word, 'context': context}]
 
-        dialog = ExportDialog(self.table, lingualeo)
+        dialog = ExportDialog(self.array, lingualeo)
         dialog.closed.connect(self.clearMessage)
         dialog.exec_()
 
@@ -391,33 +406,50 @@ class MainWindow(QtGui.QMainWindow):
         self.email_edit.textChanged.connect(self.changeEditWidth)
         self.pass_edit.textChanged.connect(self.changeEditWidth)
 
-    def closeEvent(self, event):
-        a = AreYouSure()
-        a.saved.connect(self.saveDefaults)
-        a.exec_()
-        event.ignore()
+    def loadTranslation(self):
+        app = QtGui.QApplication.instance()
+        self.language_translator = QtCore.QTranslator()
 
-    def saveDefaults(self):
+        if self.sender():
+            self.language = self.sender().objectName()
+        path = os.path.join("src", "lang", "qt_"+self.language)
+        self.language_translator.load(path)
+        app.installTranslator(self.language_translator)
+        self.retranslateUI()
+
+    def saveDefaults(self, save_email):
         '''save default email and password'''
         self.settings = QtCore.QSettings(
             DEFAULT_NAME, QtCore.QSettings.IniFormat
             )
-        self.settings.setValue("email", self.email_edit.text())
-        self.settings.setValue("password", self.pass_edit.text())
+        if save_email:
+            self.settings.setValue("email", self.email_edit.text())
+            self.settings.setValue("password", self.pass_edit.text())
+        if self.language:
+            self.settings.setValue("language", self.language)
 
     def loadDefaults(self):
-        '''load default email and password'''
+        '''load default email/password and language'''
         try:
             self.settings = QtCore.QSettings(
                 "src.ini", QtCore.QSettings.IniFormat
                 )
             email = self.settings.value("email")
             password = self.settings.value("password")
+            language = self.settings.value("language")
+            if language:
+                self.language = language
             self.email_edit.setText(email)
             self.pass_edit.setText(password)
+        # no ini file
         except Exception:
             pass
 
+    def closeEvent(self, event):
+        a = AreYouSure()
+        a.saved.connect(self.saveDefaults)
+        a.exec_()
+        event.ignore()
 
 class WorkThread(QtCore.QThread):
 
@@ -654,7 +686,6 @@ class StatisticsWindow(QtGui.QDialog):
         self.retranslateUI()
 
     def initUI(self):
-
         self.list_view = QtGui.QListWidget()
         self.table = QtGui.QTableWidget()
         self.table.setColumnCount(3)
