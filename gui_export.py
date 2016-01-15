@@ -22,14 +22,7 @@ from pydub.playback import play
 '''
 
 # CONSTANTS
-DEFAULT_NAME = "src.ini"
 TESTS_NAME = "tests/"
-MAIN_ICO = os.path.join("src", "pics", "lingualeo.ico")
-EXPORT_ICO = os.path.join("src", "pics", "export.ico")
-STAT_ICO = os.path.join("src", "pics", "statistics.ico")
-EXIT_ICO = os.path.join("src", "pics", "exit.ico")
-WARN_ICO = os.path.join("src", "pics", "warning.ico")
-WARN_ICO = "warning.ico"
 
 
 def centerUI(self):
@@ -46,6 +39,7 @@ def playSound(name):
 
 class AreYouSure(QtGui.QDialog):
     """exit dialog"""
+    ICON_FILE = os.path.join("src", "pics", "exit.ico")
     saved = QtCore.pyqtSignal(bool)
 
     def __init__(self):
@@ -70,7 +64,7 @@ class AreYouSure(QtGui.QDialog):
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Exit"))
-        self.setWindowIcon(QtGui.QIcon(EXIT_ICO))
+        self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.label.setText(self.tr("Are you sure to quit?"))
         self.yes_button.setText(self.tr("Yes"))
         self.no_button.setText(self.tr("No"))
@@ -89,6 +83,7 @@ class AreYouSure(QtGui.QDialog):
 
 class NotificationDialog(QtGui.QDialog):
     """dialog for notifications - 'Connection Lost' etc"""
+    ICON_FILE = os.path.join("src", "pics", "warning.ico")
 
     def __init__(self, text):
         super(NotificationDialog, self).__init__()
@@ -106,7 +101,7 @@ class NotificationDialog(QtGui.QDialog):
         self.setLayout(layout)
 
     def retranslateUI(self):
-        self.setWindowIcon(QtGui.QIcon(WARN_ICO))
+        self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.label.setText(self.text)
         self.ok_button.setText("OK")
 
@@ -116,6 +111,8 @@ class NotificationDialog(QtGui.QDialog):
 
 class MainWindow(QtGui.QMainWindow):
     """main window"""
+    ICON_FILE = os.path.join("src", "pics", "lingualeo.ico")
+    SRC = os.path.join("src", "src.ini")
 
     def __init__(self, source='input'):
         super(MainWindow, self).__init__()
@@ -221,7 +218,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Export to Lingualeo"))
-        self.setWindowIcon(QtGui.QIcon(MAIN_ICO))
+        self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.email_label.setText("e-mail")
         self.pass_label.setText("password")
         self.main_label.setText(self.tr("<center>Choose the source</center>"))
@@ -420,7 +417,7 @@ class MainWindow(QtGui.QMainWindow):
     def saveDefaults(self, save_email):
         '''save default email and password'''
         self.settings = QtCore.QSettings(
-            DEFAULT_NAME, QtCore.QSettings.IniFormat
+            SRC, QtCore.QSettings.IniFormat
             )
         if save_email:
             self.settings.setValue("email", self.email_edit.text())
@@ -432,7 +429,7 @@ class MainWindow(QtGui.QMainWindow):
         '''load default email/password and language'''
         try:
             self.settings = QtCore.QSettings(
-                "src.ini", QtCore.QSettings.IniFormat
+                SRC, QtCore.QSettings.IniFormat
                 )
             email = self.settings.value("email")
             password = self.settings.value("password")
@@ -511,6 +508,7 @@ class WorkThread(QtCore.QThread):
 
 class ExportDialog(QtGui.QDialog):
 
+    ICON_FILE = os.path.join("src", "pics", "export.ico")
     closed = QtCore.pyqtSignal()
 
     def __init__(self, array, lingualeo):
@@ -529,7 +527,6 @@ class ExportDialog(QtGui.QDialog):
 
     def initUI(self):
 
-        self.setWindowIcon(QtGui.QIcon(EXPORT_ICO))
         layout = QtGui.QVBoxLayout()
 
         info_layout = QtGui.QVBoxLayout()
@@ -579,7 +576,7 @@ class ExportDialog(QtGui.QDialog):
 
     def retranslateUI(self):
 
-        self.setWindowIcon(QtGui.QIcon(EXPORT_ICO))
+        self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         avatar = QtGui.QPixmap()
         avatar.loadFromData(self.lingualeo.avatar)
         self.avatar_label.setPixmap(avatar)
@@ -679,6 +676,8 @@ class ExportDialog(QtGui.QDialog):
 
 class StatisticsWindow(QtGui.QDialog):
 
+    ICON_FILE = os.path.join("src", "pics", "statistics.ico")
+
     def __init__(self, stat):
         super(QtGui.QDialog, self).__init__()
         self.stat = stat
@@ -759,6 +758,7 @@ class StatisticsWindow(QtGui.QDialog):
         return grid
 
     def retranslateUI(self):
+        self.setWindowIcon(self.ICON_FILE)
         self.setWindowTitle(self.tr("Statistics"))
 
 
