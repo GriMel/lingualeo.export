@@ -32,12 +32,20 @@ def centerUI(self):
     qr.moveCenter(cp)
     self.move(qr.topLeft())
 
-
 def playSound(name):
     pass
 
 
-class AreYouSure(QtGui.QDialog):
+class CustomDialog(QtGui.QDialog):
+
+    def __init__(self):
+        super(CustomDialog, self).__init__()
+        self.setWindowFlags(self.windowFlags()\
+            ^ QtCore.Qt.WindowContextHelpButtonHint\
+            ^ QtCore.Qt.WindowMaximizeButtonHint)
+
+
+class AreYouSure(CustomDialog):
     """exit dialog"""
     ICON_FILE = os.path.join("src", "pics", "exit.ico")
     saved = QtCore.pyqtSignal(bool)
@@ -49,6 +57,8 @@ class AreYouSure(QtGui.QDialog):
         self.initActions()
 
     def initUI(self):
+        self.setWindowFlags(self.windowFlags() \
+            & ~QtCore.Qt.WindowContextHelpButtonHint)
         layout = QtGui.QVBoxLayout()
         hor_lay = QtGui.QHBoxLayout()
         self.label = QtGui.QLabel()
@@ -81,7 +91,7 @@ class AreYouSure(QtGui.QDialog):
         self.no_button.clicked.connect(self.close)
 
 
-class NotificationDialog(QtGui.QDialog):
+class NotificationDialog(CustomDialog):
     """dialog for notifications - 'Connection Lost' etc"""
     ICON_FILE = os.path.join("src", "pics", "warning.ico")
 
@@ -517,7 +527,7 @@ class WorkThread(QtCore.QThread):
         self.array = array[index:]
 
 
-class ExportDialog(QtGui.QDialog):
+class ExportDialog(CustomDialog):
 
     ICON_FILE = os.path.join("src", "pics", "export.ico")
     closed = QtCore.pyqtSignal()
@@ -689,7 +699,7 @@ class ExportDialog(QtGui.QDialog):
             self.finish()
 
 
-class StatisticsWindow(QtGui.QDialog):
+class StatisticsWindow(CustomDialog):
 
     ICON_FILE = os.path.join("src", "pics", "statistics.ico")
 
