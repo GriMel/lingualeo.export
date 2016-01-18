@@ -32,17 +32,78 @@ def centerUI(self):
     qr.moveCenter(cp)
     self.move(qr.topLeft())
 
+
 def playSound(name):
     pass
 
 
-class CustomDialog(QtGui.QDialog):
+class WinDialog(QtGui.QDialog):
 
     def __init__(self):
-        super(CustomDialog, self).__init__()
+        super(WinDialog, self).__init__()
         self.setWindowFlags(self.windowFlags()\
-            ^ QtCore.Qt.WindowContextHelpButtonHint\
-            ^ QtCore.Qt.WindowMaximizeButtonHint)
+            ^ QtCore.Qt.WindowContextHelpButtonHint)
+
+if os.name == 'nt':
+    CustomDialog = WinDialog
+else:
+    CustomDialog = QtGui.QDialog
+
+
+class AboutDialog(CustomDialog):
+    """about authors etc"""
+    ICON_FILE = os.path.join("src", "pics", "about.ico")
+    ICON_LING_FILE = os.path.join("src", "pics", "lingualeo.ico")
+    def __init__(self):
+        super(AboutDialog, self).__init__()
+        self.initUI()
+        self.retranslateUI()
+        self.initActions()
+        centerUI(self)
+
+    def initUI(self):
+        layout = QtGui.QVBoxLayout()
+        self.icon_label = QtGui.QLabel()
+        self.icon_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.version_label = QtGui.QLabel()
+        self.version_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.about_label = QtGui.QLabel()
+        
+        self.ok_button = QtGui.QPushButton()
+        layout.addWidget(self.icon_label)
+        layout.addWidget(self.version_label)
+        layout.addWidget(self.about_label)
+        layout.addWidget(self.ok_button)
+        self.setLayout(layout)
+
+    def retranslateUI(self):
+        self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
+        self.setWindowTitle(self.tr("About"))
+        #avatar = QtGui.QPixmap()
+        #avatar.loadFromData(self.lingualeo.avatar)
+        self.icon_label.setPixmap(QtGui.QPixmap(self.ICON_LING_FILE))
+        self.version_label.setText("Kindleo 0.9.3 beta")
+        text = self.tr(
+            """
+            <span>
+            <center>
+            GUI version created after
+            <a href="http://habrahabr.ru/sandbox/85653/">this</a>
+            habrahabr article and<br>
+            specially for users from
+            <a href="http://www.the-ebook.org/forum/viewforum.php?f=37">
+            the-ebook</a> Amazon forum.<br><br>
+            <b>Original idea</b><br>Ilya Isaev<br><br>
+            <b>GUI and some improvements:</b><br> Grigoriy Melnichenko
+            </center>
+            </span>
+            """
+            )
+        self.about_label.setText(text)
+        self.ok_button.setText(self.tr("OK"))
+
+    def initActions(self):
+        self.ok_button.clicked.connect(self.close)
 
 
 class AreYouSure(CustomDialog):
@@ -138,20 +199,33 @@ class MainWindow(QtGui.QMainWindow):
         self.checkState()
         self.initActions()
 
-    def initLangLayout(self):
-        layout = QtGui.QHBoxLayout()
+    def createMenuBar(self):
+        self.menu_bar = QtGui.QMenuBar()
+        self.main_menu = QtGui.QMenu()
+        self.language_menu = QtGui.QMenu()
+        self.lang_action_group = QtGui.QActionGroup(self)
         for i in ("EN", "RU", "UA"):
-            button = QtGui.QPushButton(i)
-            button.setObjectName(i.lower())
-            button.clicked.connect(self.loadTranslation)
-            layout.addWidget(button)
-        return layout
+            action = QtGui.QAction(i, self)
+            action.setObjectName(i.lower())
+            self.lang_action_group.addAction(action)
+            self.language_menu.addAction(action)
+        self.exit_action = QtGui.QAction(self)
+        self.main_menu.addAction(self.language_menu.menuAction())
+        self.main_menu.addAction(self.exit_action)
+
+        self.help_menu = QtGui.QMenu(self.menu_bar)
+        self.about_action = QtGui.QAction(self)
+        self.help_menu.addAction(self.about_action)
+
+        self.menu_bar.addAction(self.main_menu.menuAction())
+        self.menu_bar.addAction(self.help_menu.menuAction())
+        self.setMenuBar(self.menu_bar)
+
 
     def initUI(self):
         self.main_widget = QtGui.QWidget(self)
         self.main_layout = QtGui.QVBoxLayout()
 
-        self.lang_layout = self.initLangLayout()
         self.auth_layout = QtGui.QGridLayout()
         self.auth_label = QtGui.QLabel()
         self.email_label = QtGui.QLabel()
@@ -204,8 +278,6 @@ class MainWindow(QtGui.QMainWindow):
         self.bottom_layout.addWidget(self.export_push)
         self.bottom_layout.addWidget(self.truncate_push)
 
-        self.main_layout.addLayout(self.lang_layout)
-        self.main_layout.addStretch(1)
         self.main_layout.addLayout(self.auth_layout)
         self.main_layout.addWidget(self.main_label)
         self.main_layout.addWidget(self.input_radio)
@@ -222,6 +294,9 @@ class MainWindow(QtGui.QMainWindow):
         self.setStatusBar(self.status_bar)
         self.main_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.main_widget)
+        self.status_bar = QtGui.QStatusBar()
+        self.language_menu = QtGui.QMenu
+        self.createMenuBar()
 
     def setSizeUI(self):
         """prevents growing edit field"""
@@ -247,6 +322,15 @@ class MainWindow(QtGui.QMainWindow):
 
         self.export_push.setText(self.tr("Export"))
         self.truncate_push.setText(self.tr("Truncate"))
+
+        # retranslate menu
+        self.main_menu.setTitle(self.tr("Main menu"))
+        self.language_menu.setTitle(self.tr("Language"))
+        self.exit_action.setText(self.tr("Exit"))
+
+        self.help_menu.setTitle(self.tr("Help"))
+        self.about_action.setText(self.tr("About"))
+
 
     def checkState(self):
         input_state = self.input_radio.isChecked()
@@ -414,6 +498,10 @@ class MainWindow(QtGui.QMainWindow):
                 self.pass_edit.text()).width() + 10
             self.pass_edit.setMinimumWidth(width_p)
 
+    def showAbout(self):
+        about = AboutDialog()
+        about.exec_()
+
     def initActions(self):
         self.input_radio.clicked.connect(self.getSource)
         self.text_radio.clicked.connect(self.getSource)
@@ -424,6 +512,11 @@ class MainWindow(QtGui.QMainWindow):
         self.text_push.clicked.connect(self.setPath)
         self.email_edit.textChanged.connect(self.changeEditWidth)
         self.pass_edit.textChanged.connect(self.changeEditWidth)
+        # actions for menu
+        for i in self.lang_action_group.actions():
+            i.triggered.connect(self.loadTranslation)
+        self.exit_action.triggered.connect(self.close)
+        self.about_action.triggered.connect(self.showAbout)
 
     def loadTranslation(self):
         app = QtGui.QApplication.instance()
