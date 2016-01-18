@@ -745,6 +745,7 @@ class StatisticsWindow(CustomDialog):
         self.layout.addLayout(grid)
         self.layout.addWidget(self.table)
         self.setLayout(self.layout)
+
     def createGrid(self):
 
         total = len(self.stat)
