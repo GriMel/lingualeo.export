@@ -36,10 +36,9 @@ def zip(folder):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("version")
-    parser.add_argument("system")
     args = parser.parse_args()
     version = args.version
-    system = "lin" if "lin" in args.system else "win"
+    system = 'win' if os.name == 'nt' else 'lin'
     name = "Kindleo_{}_{}".format(version, system)
 
     compile_script(name)
