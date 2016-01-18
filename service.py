@@ -4,15 +4,15 @@ import requests
 from operator import itemgetter
 from collections import Counter
 
-LOGIN = "http://api.lingualeo.com/api/login"
-ADD_WORD = "http://api.lingualeo.com/addword"
-GET_TRANSLATE = "http://api.lingualeo.com/gettranslates?word="
-
 
 class Lingualeo(object):
     """Lingualeo.com API class"""
 
     TIMEOUT = 5
+    LOGIN = "http://api.lingualeo.com/api/login"
+    ADD_WORD = "http://api.lingualeo.com/addword"
+    ADD_WORD_MULTI = "http://api.lingualeo.com/addwords"
+    GET_TRANSLATE = "http://api.lingualeo.com/gettranslates?word="
 
     def __init__(self, email, password):
         self.email = email
@@ -29,7 +29,7 @@ class Lingualeo(object):
 
     def auth(self):
         """authorization on lingualeo.com"""
-        url = LOGIN
+        url = self.LOGIN
         values = {
             "email": self.email,
             "password": self.password
@@ -48,7 +48,7 @@ class Lingualeo(object):
 
     def get_translate(self, word):
         """get translation from lingualeo's API"""
-        url = GET_TRANSLATE + word
+        url = self.GET_TRANSLATE + word
         try:
             response = requests.get(url,
                                     cookies=self.cookies,
@@ -76,13 +76,24 @@ class Lingualeo(object):
 
     def add_word(self, word, tword, context=""):
         """add new word"""
-        url = ADD_WORD
+        url = self.ADD_WORD
         values = {
             "word": word,
             "tword": tword,
             "context": context
         }
         requests.post(url, values, cookies=self.cookies, timeout=self.TIMEOUT)
+
+    def add_word_multiple(self, array):
+        """add the array of words"""
+        url = self.ADD_WORD_MULTI
+        data = dict()
+        for index, i in enumerate(array):
+            data["words["+index+"][word]"] = array['word']
+            data["words["+index+"][tword]"] = array['tword']
+            data["words["+index+"][context]"] = array['context']
+
+        requests.post(url, data, cookies=self.cookies)
 
     def isPremium(self):
         """tells if user has a premium status"""
