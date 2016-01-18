@@ -83,7 +83,7 @@ class AboutDialog(CustomDialog):
         #avatar.loadFromData(self.lingualeo.avatar)
         self.icon_label.setPixmap(QtGui.QPixmap(self.ICON_LING_FILE))
         self.version_label.setText("Kindleo 0.9.3 beta")
-        text = self.tr(
+        self.about_label.setText(self.tr(
             """
             <span>
             <center>
@@ -98,8 +98,7 @@ class AboutDialog(CustomDialog):
             </center>
             </span>
             """
-            )
-        self.about_label.setText(text)
+            ))
         self.ok_button.setText(self.tr("OK"))
 
     def initActions(self):

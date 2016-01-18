@@ -4,7 +4,7 @@ import shutil
 
 
 def compile_script(folderName):
-    icon = "lingualeo.ico"
+    icon = os.path.join("src", "pics", "lingualeo.ico")
     name = "Kindleo"
     scriptName = "gui_export.py"
     command = "pyinstaller -noconsole -F --icon={0} --name={1} "\
