@@ -12,3 +12,5 @@ Kindleo*
 *.js
 tests.py
 *.ts
+makefile
+dbs/

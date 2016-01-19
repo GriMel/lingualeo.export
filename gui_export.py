@@ -34,6 +34,7 @@ def centerUI(self):
 
 
 def playSound(name):
+    """left for future sound notifications"""
     pass
 
 
@@ -191,7 +192,6 @@ class MainWindow(QtGui.QMainWindow):
         self.file_name = None
         self.array = None
         self.initUI()
-        self.setSizeUI()
         self.loadDefaults()
         self.loadTranslation()
         centerUI(self)
@@ -289,19 +289,12 @@ class MainWindow(QtGui.QMainWindow):
         self.main_layout.addLayout(self.kindle_layout)
         self.main_layout.addStretch(1)
         self.main_layout.addLayout(self.bottom_layout)
-        self.status_bar = QtGui.QStatusBar(self)
+        self.status_bar = QtGui.QStatusBar()
         self.setStatusBar(self.status_bar)
         self.main_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.main_widget)
-        self.status_bar = QtGui.QStatusBar()
         self.language_menu = QtGui.QMenu
         self.createMenuBar()
-
-    def setSizeUI(self):
-        """prevents growing edit field"""
-        self.input_word_edit.setFixedHeight(
-            self.input_word_edit.sizeHint().height()
-            )
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Export to Lingualeo"))
@@ -330,7 +323,6 @@ class MainWindow(QtGui.QMainWindow):
         self.help_menu.setTitle(self.tr("Help"))
         self.about_action.setText(self.tr("About"))
 
-
     def checkState(self):
         input_state = self.input_radio.isChecked()
         text = self.text_radio.isChecked()
@@ -354,6 +346,9 @@ class MainWindow(QtGui.QMainWindow):
         if ext != '.txt':
             return True
 
+    def kindlePathEmpty(self):
+        return not self.kindle_path.text()
+
     def kindleEmpty(self):
         """handler for empty kindle database"""
         database = sqlite3.connect(self.file_name)
@@ -361,10 +356,14 @@ class MainWindow(QtGui.QMainWindow):
         data = cursor.execute("SELECT * FROM WORDS").fetchall()
         return len(data) == 0
 
-    def kindleWrongDatabase(self):
+    def kindleNotDatabase(self):
         _, ext = os.path.splitext(self.file_name)
         if ext != ".db":
             return True
+        else:
+            return False
+
+    def kindleWrongDatabase(self):
         conn = sqlite3.connect(self.file_name)
         try:
             conn.execute("SELECT * FROM WORDS")
@@ -449,7 +448,6 @@ class MainWindow(QtGui.QMainWindow):
                 self.status_bar.showMessage(self.tr("No word"))
                 return
             self.array = [{'word': word, 'context': context}]
-
         dialog = ExportDialog(self.array, lingualeo)
         dialog.closed.connect(self.clearMessage)
         dialog.exec_()
@@ -474,6 +472,7 @@ class MainWindow(QtGui.QMainWindow):
                 conn.execute("DELETE FROM LOOKUPS;")
                 conn.execute("UPDATE METADATA SET sscnt = 0\
                                 WHERE id in ('WORDS', 'LOOKUPS');")
+                conn.execute("VACUUM;")
                 conn.commit()
             self.status_bar.showMessage(self.tr("Kindle database is empty"))
         else:
@@ -830,8 +829,7 @@ class StatisticsWindow(CustomDialog):
         self.table.resizeRowsToContents()
         header = self.table.horizontalHeader()
         header.setStretchLastSection(True)
-        # self.table.resizeColumnsToContents()
-        # self.label.setStyleSheet("background-color:red")
+
         grid = self.createGrid()
         self.layout = QtGui.QVBoxLayout()
         self.layout.addLayout(grid)
