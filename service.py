@@ -102,3 +102,10 @@ class Lingualeo(object):
     def substractMeatballs(self):
         """method for substracting meatballs"""
         self.meatballs -= 1
+
+    def isEnoughMeatballs(self, words):
+        """check if meatballs > words"""
+        if not self.isPremium() and self.meatballs < words:
+            return False
+        else:
+            return True
