@@ -42,8 +42,12 @@ class WinDialog(QtGui.QDialog):
 
     def __init__(self):
         super(WinDialog, self).__init__()
-        self.setWindowFlags(self.windowFlags()\
-            ^ QtCore.Qt.WindowContextHelpButtonHint)
+        windowFlags = self.windowFlags()
+        windowFlags &= ~QtCore.Qt.WindowMaximizeButtonHint
+        windowFlags &= ~QtCore.Qt.WindowMinMaxButtonsHint
+        windowFlags &= ~QtCore.Qt.WindowContextHelpButtonHint
+        windowFlags |= QtCore.Qt.WindowMinimizeButtonHint
+        self.setWindowFlags(windowFlags)
 
 if os.name == 'nt':
     CustomDialog = WinDialog
@@ -55,6 +59,7 @@ class AboutDialog(CustomDialog):
     """about authors etc"""
     ICON_FILE = os.path.join("src", "pics", "about.ico")
     ICON_LING_FILE = os.path.join("src", "pics", "lingualeo.ico")
+
     def __init__(self):
         super(AboutDialog, self).__init__()
         self.initUI()
@@ -69,7 +74,7 @@ class AboutDialog(CustomDialog):
         self.version_label = QtGui.QLabel()
         self.version_label.setAlignment(QtCore.Qt.AlignCenter)
         self.about_label = QtGui.QLabel()
-        
+
         self.ok_button = QtGui.QPushButton()
         layout.addWidget(self.icon_label)
         layout.addWidget(self.version_label)
@@ -80,8 +85,6 @@ class AboutDialog(CustomDialog):
     def retranslateUI(self):
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.setWindowTitle(self.tr("About"))
-        #avatar = QtGui.QPixmap()
-        #avatar.loadFromData(self.lingualeo.avatar)
         self.icon_label.setPixmap(QtGui.QPixmap(self.ICON_LING_FILE))
         self.version_label.setText("Kindleo 0.9.3 beta")
         self.about_label.setText(self.tr(
@@ -93,7 +96,7 @@ class AboutDialog(CustomDialog):
             habrahabr article and<br>
             specially for users from
             <a href="http://www.the-ebook.org/forum/viewforum.php?f=37">
-            the-ebook</a> Amazon forum.<br><br>
+            The-Ebook</a> Amazon forum.<br><br>
             <b>Original idea</b><br>Ilya Isaev<br><br>
             <b>GUI and some improvements:</b><br> Grigoriy Melnichenko
             </center>
@@ -220,7 +223,6 @@ class MainWindow(QtGui.QMainWindow):
         self.menu_bar.addAction(self.help_menu.menuAction())
         self.setMenuBar(self.menu_bar)
 
-
     def initUI(self):
         self.main_widget = QtGui.QWidget(self)
         self.main_layout = QtGui.QVBoxLayout()
@@ -273,9 +275,15 @@ class MainWindow(QtGui.QMainWindow):
         self.export_push = QtGui.QPushButton()
         self.truncate_push = QtGui.QPushButton()
         self.truncate_push.setEnabled(False)
+        # FROZEN
+        # self.repair_push = QtGui.QPushButton()
+        # self.repair_push.hide()
+        # FROZEN
         self.bottom_layout = QtGui.QHBoxLayout()
         self.bottom_layout.addWidget(self.export_push)
         self.bottom_layout.addWidget(self.truncate_push)
+        # FROZEN
+        # self.bottom_layout.addWidget(self.repair_push)
 
         self.main_layout.addLayout(self.auth_layout)
         self.main_layout.addWidget(self.main_label)
@@ -314,6 +322,8 @@ class MainWindow(QtGui.QMainWindow):
 
         self.export_push.setText(self.tr("Export"))
         self.truncate_push.setText(self.tr("Truncate"))
+        # FROZEN
+        # self.repair_push.setText(self.tr("Repair"))
 
         # retranslate menu
         self.main_menu.setTitle(self.tr("Main menu"))
@@ -337,40 +347,107 @@ class MainWindow(QtGui.QMainWindow):
         self.kindle_push.setEnabled(kindle)
         self.kindle_path.setEnabled(kindle)
 
-    def TextEmpty(self):
-        return os.stat(self.file_name).st_size == 0
-
-    def TextWrongFile(self):
-        """handler for text file"""
-        _, ext = os.path.splitext(self.file_name)
-        if ext != '.txt':
-            return True
-
-    def kindlePathEmpty(self):
-        return not self.kindle_path.text()
-
-    def kindleEmpty(self):
-        """handler for empty kindle database"""
-        database = sqlite3.connect(self.file_name)
-        cursor = database.cursor()
-        data = cursor.execute("SELECT * FROM WORDS").fetchall()
-        return len(data) == 0
-
-    def kindleNotDatabase(self):
-        _, ext = os.path.splitext(self.file_name)
-        if ext != ".db":
-            return True
-        else:
-            return False
-
-    def kindleWrongDatabase(self):
-        conn = sqlite3.connect(self.file_name)
+    def lingualeoOk(self):
+        """check if lingualeo is suitable for export"""
         try:
-            conn.execute("SELECT * FROM WORDS")
+            self.lingualeo.auth()
+        # handle no internet connection/no site connection
+        except(NoConnection, Timeout):
+            self.status_bar.showMessage(
+                self.tr("No connection"))
             return False
-        except Exception:
-            return True
+        # handle wrong email/password
+        except KeyError:
+            self.status_bar.showMessage(
+                self.tr("Email or password are incorrect"))
+            return False
+        if self.lingualeo.meatballs == 0:
+            self.status_bar.showMessage(
+                self.tr("No meatballs"))
+            return False
+        return True
 
+    def textOk(self):
+        """check if text is OK"""
+        path = self.text_path.text()
+        _, ext = os.path.splitext(path)
+        if ext != '.txt':
+            self.status_bar.showMessage(
+                self.tr("Not txt file"))
+            return False
+        if os.stat(path).st_size == 0:
+            self.status_bar.showMessage(self.tr("Txt file is empty"))
+            return False
+        return True
+
+    def kindleOk(self):
+        """kindle handler"""
+
+        path = self.kindle_path.text()
+        # no path
+        if not path:
+            self.status_bar.showMessage(self.tr("No Kindle database"))
+            return False
+
+        # not valid database
+        _, ext = os.path.splitext(path)
+        if ext != '.db':
+            self.status_bar.showMessage(
+                self.tr("Not valid file format"))
+            return False
+
+        # check database
+        conn = sqlite3.connect(path)
+        cursor = conn.cursor()
+        data = None
+        try:
+            data = cursor.execute("SELECT * FROM WORDS")
+        # no table WORDS
+        except sqlite3.OperationalError:
+            self.status_bar.showMessage(
+                self.tr("Not valid database"))
+            return False
+        # database is malformed
+        except sqlite3.DatabaseError:
+            self.status_bar.showMessage(
+                self.tr("Kindle database is malformed"))
+            return False
+        # database is empty
+        if not data:
+            self.status_bar.showMessage(
+                self.tr("Kindle database is empty"))
+            return False
+        return True
+
+    '''
+    FROZEN
+    def kindleRepairDatabase(self):
+        """tool for repairing Kindle db"""
+
+        old_name = self.file_name
+        conn = sqlite3.connect(old_name)
+        new_name = "{}_new.db".format(
+            old_name[:-old_name.rindex('.')])
+        temp_sql = "temp.sql"
+        i = 0
+        while os.path.exists(new_name):
+            new_name = "{}{}".format(
+                new_name[:-new_name.rindex('.'), i])
+            i += 1
+        with conn:
+            conn.execute(".output {}".format(temp_sql))
+            conn.execute(".dump")
+        conn = sqlite3.connect(new_name)
+        sql = None
+        with open(temp_sql) as f:
+            sql = f.read()
+        conn.executescript(sql)
+        conn.commit()
+        os.remove(temp_sql)
+        self.repair_push.hide()
+        self.status_bar.showMessage(self.tr(
+            "Base repaired. Try to export"))
+    '''
     def getSource(self):
         source = self.sender().objectName()
         if 'kindle' not in source:
@@ -631,7 +708,7 @@ class ExportDialog(CustomDialog):
         self.value = 0
         self.task = WorkThread(lingualeo)
         self.task.getData(array)
-        self.length = len(self.array)
+        self.words_count = len(self.array)
         self.lingualeo = lingualeo
         self.initUI()
         self.retranslateUI()
@@ -669,7 +746,7 @@ class ExportDialog(CustomDialog):
         hor_layout = QtGui.QHBoxLayout()
         self.label = QtGui.QLabel()
         self.progress_bar = QtGui.QProgressBar(self)
-        self.progress_bar.setRange(0, self.length)
+        self.progress_bar.setRange(0, self.words_count)
         self.start_button = QtGui.QPushButton()
         self.start_button.setObjectName("start")
         self.break_button = QtGui.QPushButton()
@@ -761,16 +838,15 @@ class ExportDialog(CustomDialog):
                     str(self.lingualeo.meatballs))
         else:
             self.start_button.click()
-            # playSound(os.path.join("src", "sounds", "warning.mp3"))
             warning = NotificationDialog(self.tr("No Internet Connection"))
             warning.exec_()
             return
 
         self.stat.append(data['row'])
         self.value += 1
-        self.label.setText("{} words processed out of {}".format(self.value,
-                                                                 self.length))
-        # initial value of progressBar is -1
+        self.label.setText(
+            "{} words processed out of {}".format(self.value,
+                                                  self.words_count))
         self.progress_bar.setValue(self.value)
         if self.lingualeo.meatballs == 0:
             self.task.stop()
@@ -840,7 +916,7 @@ class StatisticsWindow(CustomDialog):
 
         total = len(self.stat)
         result = Counter(i["result"] for i in self.stat)
-        added = result["new"]
+        added = result["added"]
         not_added = result["not added"]
         wrong = result["no translation"]
         exist = len(self.stat) - (added+not_added) - wrong
@@ -852,7 +928,7 @@ class StatisticsWindow(CustomDialog):
                  "color": ""},
                 {"text": self.tr("Added"),
                  "value": added,
-                 "color": "green"},
+                 "color": "lime"},
                 {"text": self.tr("Exist"),
                  "value": exist,
                  "color": "red"},
