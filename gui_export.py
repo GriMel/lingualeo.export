@@ -194,12 +194,14 @@ class MainWindow(QtGui.QMainWindow):
         self.language = "en"
         self.file_name = None
         self.array = None
+        self.lingualeo = None
         self.initUI()
         self.loadDefaults()
         self.loadTranslation()
         centerUI(self)
         self.checkState()
         self.initActions()
+        self.setValidators()
 
     def createMenuBar(self):
         self.menu_bar = QtGui.QMenuBar()
@@ -333,6 +335,15 @@ class MainWindow(QtGui.QMainWindow):
         self.help_menu.setTitle(self.tr("Help"))
         self.about_action.setText(self.tr("About"))
 
+    def setValidators(self):
+        """
+        Set validators to all input fields to
+        prevent incorrect input value
+        """
+        regexp = QtCore.QRegExp("^[a-zA-Z`'-]+(\s+[a-zA-Z`'-]+)*$")
+        validator = QtGui.QRegExpValidator(regexp)
+        self.input_word_edit.setValidator(validator)
+
     def checkState(self):
         input_state = self.input_radio.isChecked()
         text = self.text_radio.isChecked()
@@ -460,83 +471,53 @@ class MainWindow(QtGui.QMainWindow):
     def clearMessage(self):
         self.status_bar.showMessage("")
 
-    def export(self):
+    def exportWords(self):
         """kidle/input/word"""
         kindle = self.kindle_radio.isChecked()
+        input_word = self.input_radio.isChecked()
         text = self.text_radio.isChecked()
         email = self.email_edit.text().strip(" ")
         password = self.pass_edit.text().strip(" ")
-        lingualeo = Lingualeo(email, password)
+        self.lingualeo = Lingualeo(email, password)
 
-        try:
-            lingualeo.auth()
-        # Handle no internet connection/no site connection
-        except (NoConnection, Timeout):
-            self.status_bar.showMessage(self.tr("No connection"))
-            return
-        # Handle wrong email/password
-        except KeyError:
-            self.status_bar.showMessage(self.tr("Email or password is incorrect"))
-            return
-        # Handle zero meatballs
-        if lingualeo.meatballs == 0:
-            self.status_bar.showMessage(self.tr("No meatballs"))
+        if not self.lingualeoOk():
             return
 
-        if kindle:
-            self.file_name = self.kindle_path.text()
-            # Handle empty Kindle path
-            if not self.kindle_path.text():
-                self.status_bar.showMessage(self.tr("No file"))
-                return
-
-            # Handle not valid given file
-            if self.kindleWrongDatabase():
-                self.status_bar.showMessage(self.tr("Not valid database"))
-                return
-
-            # Handle empty database
-            if self.kindleEmpty():
-                self.status_bar.showMessage(self.tr("Kindle database is empty"))
-                return
-            # Handle 0 meatballs
-            self.status_bar.showMessage(self.tr("Kindle > Lingualeo"))
-            handler = Kindle(self.file_name)
-            handler.read()
-            self.array = handler.get()
-
+        if input_word:
+            self.status_bar.showMessage(self.tr("Input > Lingualeo"))
+            word = self.input_word_edit.text().lower().strip()
+            context = self.input_context_edit.text()
+            self.array = [{'word': word, 'context': context}]
         elif text:
-            self.file_name = self.text_path.text()
-            if self.TextWrongFile():
-                self.status_bar.showMessage(self.tr("Not txt file"))
+            if not self.textOk():
                 return
-            if self.TextEmpty():
-                self.status_bar.showMessage(self.tr("Txt file is empty"))
+            self.file_name = self.text_path.text()
             self.status_bar.showMessage(self.tr("Txt > Lingualeo"))
             self.file_name = self.text_path.text()
             handler = Text(self.file_name)
             handler.read()
             self.array = handler.get()
-        else:
-            self.status_bar.showMessage(self.tr("Input > Lingualeo"))
-            word = self.input_word_edit.text().lower()
-            context = self.input_context_edit.text()
-            if not word:
-                self.status_bar.showMessage(self.tr("No word"))
+
+        elif kindle:
+            if not self.kindleOk():
                 return
-            self.array = [{'word': word, 'context': context}]
-        dialog = ExportDialog(self.array, lingualeo)
+            self.file_name = self.kindle_path.text()
+            self.status_bar.showMessage(self.tr("Kindle > Lingualeo"))
+            handler = Kindle(self.file_name)
+            handler.read()
+            self.array = handler.get()
+
+        dialog = ExportDialog(self.array, self.lingualeo)
         dialog.closed.connect(self.clearMessage)
         dialog.exec_()
 
-    def truncate(self):
+    def kindleTruncate(self):
         """truncate kindle database"""
         self.file_name = self.kindle_path.text()
         if not self.file_name:
             self.status_bar.showMessage(self.tr("No Kindle database"))
             return
-        if self.kindleEmpty():
-            self.status_bar.showMessage(self.tr("Kindle database is empty"))
+        if not self.kindleOk():
             return
         reply = QtGui.QMessageBox.question(
                     self, 'Message', 'Are you sure to truncate?',
@@ -581,8 +562,10 @@ class MainWindow(QtGui.QMainWindow):
         self.input_radio.clicked.connect(self.getSource)
         self.text_radio.clicked.connect(self.getSource)
         self.kindle_radio.clicked.connect(self.getSource)
-        self.export_push.clicked.connect(self.export)
-        self.truncate_push.clicked.connect(self.truncate)
+        self.export_push.clicked.connect(self.exportWords)
+        self.truncate_push.clicked.connect(self.kindleTruncate)
+        # FROZEN
+        # self.repair_push.clicked.connect(self.kindleRepairDatabase)
         self.kindle_push.clicked.connect(self.setPath)
         self.text_push.clicked.connect(self.setPath)
         self.email_edit.textChanged.connect(self.changeEditWidth)
@@ -783,8 +766,9 @@ class ExportDialog(CustomDialog):
         self.meatballs_title_label.setText(self.tr("Meatballs:"))
         self.meatballs_value_label.setText(str(self.lingualeo.meatballs))
 
-        if self.lingualeo.meatballs < self.length:
-            self.warning_info_label.setText(self.tr("WARNING: Meatballs < words"))
+        if not self.lingualeo.isEnoughMeatballs(self.words_count):
+            self.warning_info_label.setText(
+                self.tr("WARNING: Meatballs < words"))
             self.warning_info_label.setStyleSheet("color:red")
         self.setWindowTitle(self.tr("Preparing to export"))
         self.start_button.setText(self.tr("Start"))
@@ -833,9 +817,10 @@ class ExportDialog(CustomDialog):
         if data['sent']:
             row = data['row']
             if row['result'] == 'added':
-                self.lingualeo.substractMeatballs()
-                self.meatballs_value_label.setText(
-                    str(self.lingualeo.meatballs))
+                if not self.lingualeo.isPremium():
+                    self.lingualeo.substractMeatballs()
+                    self.meatballs_value_label.setText(
+                        str(self.lingualeo.meatballs))
         else:
             self.start_button.click()
             warning = NotificationDialog(self.tr("No Internet Connection"))
