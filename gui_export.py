@@ -18,6 +18,7 @@ from word import Kindle, Text
 from service import Lingualeo
 from log_conf import setLogger
 '''
+FROZEN
 from pydub import AudioSegment
 from pydub.playback import play
 '''
@@ -33,10 +34,12 @@ def centerUI(self):
     qr.moveCenter(cp)
     self.move(qr.topLeft())
 
-
+'''
+FROZEN
 def playSound(name):
     """left for future sound notifications"""
     pass
+'''
 
 
 class WinDialog(QtGui.QDialog):
@@ -456,8 +459,8 @@ class MainWindow(QtGui.QMainWindow):
             return False
         if wrong_count > 0:
             self.status_bar.showMessage(
-            self.status_bar.text() + \
-            ": {} words removed".format(wrong_count)
+                self.status_bar.text() + \
+                ": {} words removed".format(wrong_count)
                 )
         self.array = temp[:]
         return True
@@ -981,7 +984,6 @@ class StatisticsWindow(CustomDialog):
 def main():
     app = QtGui.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
-    # app.setQuitOnLastWindowClosed(False)
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
