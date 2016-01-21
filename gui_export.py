@@ -267,6 +267,7 @@ class MainWindow(QtGui.QMainWindow):
 
         self.kindle_radio = QtGui.QRadioButton()
         self.kindle_radio.setObjectName("kindle")
+        self.kindle_hint = QtGui.QLabel()
         self.kindle_push = QtGui.QPushButton()
         self.kindle_path = QtGui.QLineEdit()
         self.kindle_path.setReadOnly(True)
@@ -296,6 +297,7 @@ class MainWindow(QtGui.QMainWindow):
         self.main_layout.addLayout(self.text_layout)
         self.main_layout.addStretch(1)
         self.main_layout.addWidget(self.kindle_radio)
+        self.main_layout.addWidget(self.kindle_hint)
         self.main_layout.addLayout(self.kindle_layout)
         self.main_layout.addStretch(1)
         self.main_layout.addLayout(self.bottom_layout)
@@ -320,6 +322,8 @@ class MainWindow(QtGui.QMainWindow):
         self.text_push.setText(self.tr("Path"))
 
         self.kindle_radio.setText(self.tr("Kindle"))
+        self.kindle_hint.setText(self.tr(
+            "Base is here:<br>Kindle/system/vocabulary/vocab.db"))
         self.kindle_push.setText(self.tr("Path"))
 
         self.export_push.setText(self.tr("Export"))
@@ -334,6 +338,8 @@ class MainWindow(QtGui.QMainWindow):
 
         self.help_menu.setTitle(self.tr("Help"))
         self.about_action.setText(self.tr("About"))
+
+        self.setFixedHeight(self.sizeHint().height())
 
     def setValidators(self):
         """
@@ -355,6 +361,7 @@ class MainWindow(QtGui.QMainWindow):
         self.input_context_label.setEnabled(input_state)
         self.text_push.setEnabled(text)
         self.text_path.setEnabled(text)
+        self.kindle_hint.setEnabled(kindle)
         self.kindle_push.setEnabled(kindle)
         self.kindle_path.setEnabled(kindle)
 
