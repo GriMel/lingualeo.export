@@ -23,9 +23,6 @@ from pydub import AudioSegment
 from pydub.playback import play
 '''
 
-# CONSTANTS
-TESTS_NAME = "tests/"
-
 
 def centerUI(self):
     """place UI in the middle of the screen"""
@@ -95,12 +92,11 @@ class AboutDialog(CustomDialog):
             """
             <span>
             <center>
-            GUI version created after
-            <a href="http://habrahabr.ru/sandbox/85653/">this</a>
-            habrahabr article and<br>
-            specially for users from
-            <a href="http://www.the-ebook.org/forum/viewforum.php?f=37">
-            The-Ebook</a> Amazon forum.<br><br>
+            GUI version of script for exporting<br>
+            words to Lingualeo from Input, Txt file or<br>
+            Kindle vocabulary.<br>
+            Specially for users of The-Ebook Amazon forum.
+            <br><br>
             <b>Original idea</b><br>Ilya Isaev<br><br>
             <b>GUI and some improvements:</b><br> Grigoriy Melnichenko
             </center>
@@ -199,7 +195,7 @@ class MainWindow(QtGui.QMainWindow):
         self.file_name = None
         self.array = None
         self.lingualeo = None
-        self.logger = setLogger()
+        self.logger = setLogger(name='window_logger')
         self.initUI()
         self.loadDefaults()
         self.loadTranslation()
@@ -541,12 +537,17 @@ class MainWindow(QtGui.QMainWindow):
             handler.read()
             self.array = handler.get()
 
+        self.logger.debug("{} words before checking".format(len(self.array)))
         if not self.wordsOk():
             return
-
-        dialog = ExportDialog(self.array, self.lingualeo)
-        dialog.closed.connect(self.clearMessage)
-        dialog.exec_()
+        self.logger.debug("{} words after checking".format(len(self.array)))
+        try:
+            dialog = ExportDialog(self.array, self.lingualeo)
+            dialog.closed.connect(self.clearMessage)
+            dialog.exec_()
+        except Exception:
+            self.logger.exception("Got error in Dialog module")
+            sys.exit()
 
     def kindleTruncate(self):
         """truncate kindle database"""
@@ -667,7 +668,7 @@ class WorkThread(QtCore.QThread):
     def __init__(self, lingualeo):
         super(WorkThread, self).__init__()
         self.lingualeo = lingualeo
-        self.logger = setLogger()
+        self.logger = setLogger(name='workthread')
 
     def __del__(self):
         self.wait()
@@ -731,13 +732,12 @@ class ExportDialog(CustomDialog):
         self.task.getData(array)
         self.words_count = len(self.array)
         self.lingualeo = lingualeo
-        self.logger = setLogger()
+        self.logger = setLogger(name='export_dialog')
         self.initUI()
         self.retranslateUI()
         self.initActions()
 
     def initUI(self):
-
         layout = QtGui.QVBoxLayout()
 
         info_layout = QtGui.QVBoxLayout()
@@ -788,7 +788,6 @@ class ExportDialog(CustomDialog):
         self.break_button.hide()
 
     def retranslateUI(self):
-
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         avatar = QtGui.QPixmap()
         avatar.loadFromData(self.lingualeo.avatar)
@@ -804,7 +803,6 @@ class ExportDialog(CustomDialog):
 
         self.meatballs_title_label.setText(self.tr("Meatballs:"))
         self.meatballs_value_label.setText(str(self.lingualeo.meatballs))
-
         if not self.lingualeo.isEnoughMeatballs(self.words_count):
             self.warning_info_label.setText(
                 self.tr("WARNING: Meatballs < words"))
@@ -982,11 +980,22 @@ class StatisticsWindow(CustomDialog):
 
 
 def main():
+    sys._excepthook = sys.excepthook
+
+    def exception_hook(exctype, value, traceback):
+        sys._excepthook(exctype, value, traceback)
+        sys.exit(1)
+    sys.excepthook = exception_hook
+    logger = setLogger(name='main')
     app = QtGui.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec_())
+    logger.info("New session started")
+    try:
+        window = MainWindow()
+        window.show()
+        sys.exit(app.exec_())
+    except Exception:
+        logger.exception("Got error in MainWindow")
 
 if __name__ == "__main__":
     main()
