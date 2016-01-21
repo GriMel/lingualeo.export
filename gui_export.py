@@ -430,6 +430,28 @@ class MainWindow(QtGui.QMainWindow):
             return False
         return True
 
+    def wordsOk(self):
+        """get rid of non-English words"""
+        temp = []
+        for row in self.array:
+            try:
+                row['word'].encode('ascii')
+                temp.append(row)
+            except UnicodeEncodeError:
+                continue
+        ok_count = len(temp)
+        wrong_count = len(self.array) - len(temp)
+        if ok_count == 0:
+            self.status_bar.showMessage(
+                self.tr("No English words"))
+            return False
+        if wrong_count > 0:
+            self.status_bar.showMessage(
+            self.status_bar.text() + \
+            ": {} words removed".format(wrong_count)
+                )
+        self.array = temp[:]
+        return True
     '''
     FROZEN
     def kindleRepairDatabase(self):
@@ -506,6 +528,9 @@ class MainWindow(QtGui.QMainWindow):
             handler = Kindle(self.file_name)
             handler.read()
             self.array = handler.get()
+
+        if not self.wordsOk():
+            return
 
         dialog = ExportDialog(self.array, self.lingualeo)
         dialog.closed.connect(self.clearMessage)

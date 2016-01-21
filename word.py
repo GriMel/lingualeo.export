@@ -20,9 +20,9 @@ class Kindle(Base):
     def read(self):
         conn = sqlite3.connect(self.source)
         for row in conn.execute(
-            'SELECT WORDS.stem, LOOKUPS.usage \
+            "SELECT WORDS.stem, LOOKUPS.usage \
                 FROM WORDS INNER JOIN LOOKUPS ON \
-                    WORDS.id = LOOKUPS.word_key'):
+                    WORDS.id = LOOKUPS.word_key WHERE WORDS.lang = 'en'"):
             self.data.append({'word': row[0], 'context': row[1]})
         conn.close()
 
