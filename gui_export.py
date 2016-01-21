@@ -16,6 +16,7 @@ from collections import Counter
 from operator import itemgetter
 from word import Kindle, Text
 from service import Lingualeo
+from log_conf import setLogger
 '''
 from pydub import AudioSegment
 from pydub.playback import play
@@ -195,6 +196,7 @@ class MainWindow(QtGui.QMainWindow):
         self.file_name = None
         self.array = None
         self.lingualeo = None
+        self.logger = setLogger()
         self.initUI()
         self.loadDefaults()
         self.loadTranslation()
@@ -662,6 +664,7 @@ class WorkThread(QtCore.QThread):
     def __init__(self, lingualeo):
         super(WorkThread, self).__init__()
         self.lingualeo = lingualeo
+        self.logger = setLogger()
 
     def __del__(self):
         self.wait()
@@ -725,6 +728,7 @@ class ExportDialog(CustomDialog):
         self.task.getData(array)
         self.words_count = len(self.array)
         self.lingualeo = lingualeo
+        self.logger = setLogger()
         self.initUI()
         self.retranslateUI()
         self.initActions()
