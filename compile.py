@@ -28,11 +28,6 @@ def copytree(src, dst):
     print("Copied src folder")
 
 
-def zip(folder):
-    shutil.make_archive(folder, "zip", folder)
-    print("Created {} archive".format(folder))
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("version")

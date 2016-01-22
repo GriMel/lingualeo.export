@@ -38,7 +38,7 @@ class Lingualeo(object):
         self.cookies = r.cookies
         content = r.json()['user']
         self.premium = bool(content['premium_type'])
-        if not self.premium:
+        if not self.isPremium():
             self.meatballs = content['meatballs']
         else:
             self.meatballs = "Unlimited"
@@ -82,7 +82,10 @@ class Lingualeo(object):
             "tword": tword,
             "context": context
         }
-        requests.post(url, values, cookies=self.cookies, timeout=self.TIMEOUT)
+        return requests.post(url,
+                             values,
+                             cookies=self.cookies,
+                             timeout=self.TIMEOUT)
 
     def add_word_multiple(self, array):
         """add the array of words"""
@@ -93,7 +96,9 @@ class Lingualeo(object):
             data["words["+index+"][tword]"] = array['tword']
             data["words["+index+"][context]"] = array['context']
 
-        requests.post(url, data, cookies=self.cookies)
+        return requests.post(url,
+                             data,
+                             cookies=self.cookies)
 
     def isPremium(self):
         """tells if user has a premium status"""

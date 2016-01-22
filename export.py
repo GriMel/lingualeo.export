@@ -15,7 +15,7 @@ try:
         handler = Text(sources.get('text'))
     elif export_type == 'kindle':
         handler = Kindle(sources.get('kindle'))
-    elif export_type == 'input' :
+    elif export_type == 'input':
         handler = Input(sys.argv[2:])
     else:
         raise Exception('unsupported type')
@@ -34,14 +34,16 @@ try:
         lingualeo.add_word(translate["word"], translate["tword"], context)
         if not translate["is_exist"]:
             result = "Added word: "
-            added+=1
+            added += 1
         else:
             result = "Already exists: "
-            exist +=1
+            exist += 1
         result = result + word
         print (result)
-        
-    print("There were {} words.\n{} added, {} exist.".format(added+exist, added, exist, ))
+
+    print("There were {} words.\n{} added, {} exist.".format(added+exist,
+                                                             added,
+                                                             exist))
 
 
 except Exception:

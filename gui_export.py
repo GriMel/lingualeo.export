@@ -455,7 +455,7 @@ class MainWindow(QtGui.QMainWindow):
             return False
         if wrong_count > 0:
             self.status_bar.showMessage(
-                self.status_bar.text() + \
+                self.status_bar.currentMessage() + \
                 ": {} words removed".format(wrong_count)
                 )
         self.array = temp[:]
@@ -867,7 +867,7 @@ class ExportDialog(CustomDialog):
         self.stat.append(data['row'])
         self.value += 1
         self.label.setText(
-            "{} words processed out of {}".format(self.value,
+            "{0} words processed out of {1}".format(self.value,
                                                   self.words_count))
         self.progress_bar.setValue(self.value)
         if self.lingualeo.meatballs == 0:
@@ -973,6 +973,7 @@ class StatisticsWindow(CustomDialog):
 
     def resizeEvent(self, event):
         self.table.resizeRowsToContents()
+        event.accept()
 
     def retranslateUI(self):
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
