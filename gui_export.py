@@ -443,10 +443,16 @@ class MainWindow(QtGui.QMainWindow):
         temp = []
         for row in self.array:
             try:
+                # remove repeated words
+                # list of occurences 5,4,3,2
+                occur = Counter(i['word'] for i in temp)
                 row['word'].encode('ascii')
-                temp.append(row)
-            except UnicodeEncodeError:
+                if not occur[row['word']]:
+                    temp.append(row)
+            except UnicodeEncodeError as e:
+                self.logger.exception("{} - {}".format(row['word'], e))
                 continue
+
         ok_count = len(temp)
         wrong_count = len(self.array) - len(temp)
         if ok_count == 0:
@@ -691,10 +697,16 @@ class WorkThread(QtCore.QThread):
                         translate = ""
                         result = "no translation"
                     else:
-                        result = "added"
-                        self.lingualeo.add_word(word,
-                                                translate,
-                                                context)
+                        # temporary solution - to detect mysterious latin
+                        before = "added"
+                        response = self.lingualeo.add_word(word,
+                                                           translate,
+                                                           context)
+                        after = "added" if response.json()['is_new'] else "no translation"
+                        if before != after:
+                            self.logger.debug("Mysterious - {}".format(word))
+                        result = after
+
                 row = {"word": word,
                        "result": result,
                        "tword": translate,
