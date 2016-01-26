@@ -195,7 +195,7 @@ class MainWindow(QtGui.QMainWindow):
         self.file_name = None
         self.array = None
         self.lingualeo = None
-        self.logger = setLogger(name='window_logger')
+        self.logger = setLogger(name='MainWindow')
         self.initUI()
         self.loadDefaults()
         self.loadTranslation()
@@ -203,6 +203,7 @@ class MainWindow(QtGui.QMainWindow):
         self.checkState()
         self.initActions()
         self.setValidators()
+        self.logger.debug("Inited MainWindow")
 
     def createMenuBar(self):
         self.menu_bar = QtGui.QMenuBar()
@@ -225,6 +226,7 @@ class MainWindow(QtGui.QMainWindow):
         self.menu_bar.addAction(self.main_menu.menuAction())
         self.menu_bar.addAction(self.help_menu.menuAction())
         self.setMenuBar(self.menu_bar)
+        self.logger.debug("Created MenuBar")
 
     def initUI(self):
         self.main_widget = QtGui.QWidget(self)
@@ -308,6 +310,7 @@ class MainWindow(QtGui.QMainWindow):
         self.setCentralWidget(self.main_widget)
         self.language_menu = QtGui.QMenu
         self.createMenuBar()
+        self.logger.debug("Constructed UI")
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Export to Lingualeo"))
@@ -341,6 +344,7 @@ class MainWindow(QtGui.QMainWindow):
         self.about_action.setText(self.tr("About"))
 
         self.setFixedHeight(self.sizeHint().height())
+        self.logger.debug("Retranslated UI")
 
     def setValidators(self):
         """
@@ -350,6 +354,7 @@ class MainWindow(QtGui.QMainWindow):
         regexp = QtCore.QRegExp("^[a-zA-Z`'-]+(\s+[a-zA-Z`'-]+)*$")
         validator = QtGui.QRegExpValidator(regexp)
         self.input_word_edit.setValidator(validator)
+        self.logger.debug("Set validators for input")
 
     def checkState(self):
         input_state = self.input_radio.isChecked()
@@ -365,47 +370,71 @@ class MainWindow(QtGui.QMainWindow):
         self.kindle_hint.setEnabled(kindle)
         self.kindle_push.setEnabled(kindle)
         self.kindle_path.setEnabled(kindle)
+        self.logger.debug("Finished checkof elements state - Disabled/Enabled")
 
     def lingualeoOk(self):
         """check if lingualeo is suitable for export"""
+        self.debug("Checking lingualeo: {} - email, {} - password".format(
+            self.lingualeo.email, self.lingualeo.password))
         try:
             self.lingualeo.auth()
         # handle no internet connection/no site connection
         except(NoConnection, Timeout):
             self.status_bar.showMessage(
                 self.tr("No connection"))
+            self.debug(
+                "Lingualeo: WRONG - No connection"
+                )
             return False
+
         # handle wrong email/password
         except KeyError:
             self.status_bar.showMessage(
                 self.tr("Email or password are incorrect"))
+            self.logger.debug(
+                "Lingualeo: WRONG - {}-{} pair is incorrect".format(
+                    self.lingualeo.email,
+                    self.lingualeo.password))
             return False
         if self.lingualeo.meatballs == 0:
             self.status_bar.showMessage(
                 self.tr("No meatballs"))
+            self.logger.debug(
+                "Lingualeo: WRONG - {} meatballs".format(
+                    self.lingualeo.meatballs))
             return False
+        self.debug("Lingualeo is OK {}/{} + {} meatballs".format(
+            self.lingualeo.email,
+            self.lingualeo.password,
+            self.lingualeo.meatballs))
         return True
 
     def textOk(self):
         """check if text is OK"""
         path = self.text_path.text()
+        self.logger.debug("Checking TXT - {}".self.logger.debug(path))
         _, ext = os.path.splitext(path)
         if ext != '.txt':
             self.status_bar.showMessage(
                 self.tr("Not txt file"))
+            self.logger.debug("{} - is not TXT".format(path))
             return False
         if os.stat(path).st_size == 0:
             self.status_bar.showMessage(self.tr("Txt file is empty"))
+            self.logger.debug("{} - TXT is empty".format(path))
             return False
+        self.logger.debug("{} - TXT is OK".format(path))
         return True
 
     def kindleOk(self):
         """kindle handler"""
 
         path = self.kindle_path.text()
+        self.logger.debug("Checking Kindle - {}".format(path))
         # no path
         if not path:
             self.status_bar.showMessage(self.tr("No Kindle database"))
+            self.logger.debug("{} - no path")
             return False
 
         # not valid database
@@ -413,6 +442,7 @@ class MainWindow(QtGui.QMainWindow):
         if ext != '.db':
             self.status_bar.showMessage(
                 self.tr("Not valid file format"))
+            self.logger.debug("{} - not '.db'")
             return False
 
         # check database
@@ -425,17 +455,21 @@ class MainWindow(QtGui.QMainWindow):
         except sqlite3.OperationalError:
             self.status_bar.showMessage(
                 self.tr("Not valid database"))
+            self.logger.debug("{} - no WORDS table".format(path))
             return False
         # database is malformed
         except sqlite3.DatabaseError:
             self.status_bar.showMessage(
                 self.tr("Kindle database is malformed"))
+            self.logger.debug("{} is malformed".format(path))
             return False
         # database is empty
         if not data:
             self.status_bar.showMessage(
                 self.tr("Kindle database is empty"))
+            self.logger.debug("{} has WORDS but is empty".format(path))
             return False
+        self.logger.debug("{} - DB is OK".format(path))
         return True
 
     def wordsOk(self):
@@ -449,8 +483,8 @@ class MainWindow(QtGui.QMainWindow):
                 row['word'].encode('ascii')
                 if not occur[row['word']]:
                     temp.append(row)
-            except UnicodeEncodeError as e:
-                self.logger.exception("{} - {}".format(row['word'], e))
+            except UnicodeEncodeError:
+                self.logger.debug("{} is not English".format(row['word']))
                 continue
 
         ok_count = len(temp)
@@ -458,13 +492,18 @@ class MainWindow(QtGui.QMainWindow):
         if ok_count == 0:
             self.status_bar.showMessage(
                 self.tr("No English words"))
+            self.logger.debug("{} has no English".format(temp))
             return False
         if wrong_count > 0:
             self.status_bar.showMessage(
                 self.status_bar.currentMessage() + \
                 ": {} words removed".format(wrong_count)
                 )
+            self.logger.debug("{} words removed from {}".format(
+                wrong_count,
+                {(index+1): i['word'] for index, i in enumerate(self.array)}))
         self.array = temp[:]
+        self.logger.debug("Words are OK")
         return True
     '''
     FROZEN
@@ -502,13 +541,16 @@ class MainWindow(QtGui.QMainWindow):
         else:
             self.truncate_push.setEnabled(True)
         self.source = source
+        self.logger.debug("Selected {}".format(source))
         self.checkState()
 
     def clearMessage(self):
         self.status_bar.showMessage("")
+        self.logger.debug("Status bar cleared")
 
     def exportWords(self):
         """kidle/input/word"""
+        self.logger.debug("Starting export")
         kindle = self.kindle_radio.isChecked()
         input_word = self.input_radio.isChecked()
         text = self.text_radio.isChecked()
@@ -517,6 +559,7 @@ class MainWindow(QtGui.QMainWindow):
         self.lingualeo = Lingualeo(email, password)
 
         if not self.lingualeoOk():
+            self.logger.debug("Export refused - Text")
             return
 
         if input_word:
@@ -524,8 +567,10 @@ class MainWindow(QtGui.QMainWindow):
             word = self.input_word_edit.text().lower().strip()
             context = self.input_context_edit.text()
             self.array = [{'word': word, 'context': context}]
+            self.logger.debug("Export Input - Ready!")
         elif text:
             if not self.textOk():
+                self.logger.debug("Export refused - Text")
                 return
             self.file_name = self.text_path.text()
             self.status_bar.showMessage(self.tr("Txt > Lingualeo"))
@@ -533,18 +578,22 @@ class MainWindow(QtGui.QMainWindow):
             handler = Text(self.file_name)
             handler.read()
             self.array = handler.get()
+            self.logger.debug("Export Text - Ready!")
 
         elif kindle:
             if not self.kindleOk():
+                self.logger.debug("Export refused - Kindle")
                 return
             self.file_name = self.kindle_path.text()
             self.status_bar.showMessage(self.tr("Kindle > Lingualeo"))
             handler = Kindle(self.file_name)
             handler.read()
             self.array = handler.get()
+            self.logger.debug("Export Kindle - Ready!")
 
         self.logger.debug("{} words before checking".format(len(self.array)))
         if not self.wordsOk():
+            self.logger.debug("Export refused - Words")
             return
         self.logger.debug("{} words after checking".format(len(self.array)))
         try:
@@ -552,7 +601,7 @@ class MainWindow(QtGui.QMainWindow):
             dialog.closed.connect(self.clearMessage)
             dialog.exec_()
         except Exception:
-            self.logger.exception("Got error in Dialog module")
+            self.logger.exception("Dialog Exception")
             sys.exit()
 
     def kindleTruncate(self):
@@ -560,8 +609,10 @@ class MainWindow(QtGui.QMainWindow):
         self.file_name = self.kindle_path.text()
         if not self.file_name:
             self.status_bar.showMessage(self.tr("No Kindle database"))
+            self.logger.debug("Truncate not OK - {}".format(self.file_name))
             return
         if not self.kindleOk():
+            self.logger.debug("Truncate not OK - {}".format(self.file_name))
             return
         reply = QtGui.QMessageBox.question(
                     self, 'Message', 'Are you sure to truncate?',
@@ -577,7 +628,9 @@ class MainWindow(QtGui.QMainWindow):
                 conn.execute("VACUUM;")
                 conn.commit()
             self.status_bar.showMessage(self.tr("Kindle database is empty"))
+            self.logger.debug("Truncate success - {}".format(self.file_name))
         else:
+            self.logger.debug("Truncate cancelled")
             return
 
     def setPath(self):
@@ -587,16 +640,7 @@ class MainWindow(QtGui.QMainWindow):
             self.kindle_path.setText(name)
         else:
             self.text_path.setText(name)
-
-    def changeEditWidth(self):
-        if 'email' in self.sender().objectName():
-            width_e = self.email_edit.fontMetrics().boundingRect(
-                self.email_edit.text()).width() + 10
-            self.email_edit.setMinimumWidth(width_e)
-        else:
-            width_p = self.pass_edit.fontMetrics().boundingRect(
-                self.pass_edit.text()).width() + 10
-            self.pass_edit.setMinimumWidth(width_p)
+        self.logger.debug("Selected {} file".format(name))
 
     def showAbout(self):
         about = AboutDialog()
@@ -612,13 +656,12 @@ class MainWindow(QtGui.QMainWindow):
         # self.repair_push.clicked.connect(self.kindleRepairDatabase)
         self.kindle_push.clicked.connect(self.setPath)
         self.text_push.clicked.connect(self.setPath)
-        self.email_edit.textChanged.connect(self.changeEditWidth)
-        self.pass_edit.textChanged.connect(self.changeEditWidth)
         # actions for menu
         for i in self.lang_action_group.actions():
             i.triggered.connect(self.loadTranslation)
         self.exit_action.triggered.connect(self.close)
         self.about_action.triggered.connect(self.showAbout)
+        self.logger.debug("Inited actions")
 
     def loadTranslation(self):
         app = QtGui.QApplication.instance()
@@ -631,6 +674,7 @@ class MainWindow(QtGui.QMainWindow):
         self.language_translator.load(path)
         app.installTranslator(self.language_translator)
         self.retranslateUI()
+        self.logger.debug("Loaded translation")
 
     def saveDefaults(self, save_email):
         '''save default email and password'''
@@ -642,6 +686,7 @@ class MainWindow(QtGui.QMainWindow):
             self.settings.setValue("password", self.pass_edit.text())
         if self.language:
             self.settings.setValue("language", self.language)
+        self.logger.debug("Saved default email and password")
 
     def loadDefaults(self):
         '''load default email/password and language'''
@@ -658,7 +703,9 @@ class MainWindow(QtGui.QMainWindow):
             self.pass_edit.setText(password)
         # no ini file
         except Exception:
+            self.logger.exception("Couldn't load defaults")
             pass
+        self.logger.debug("Loaded default email/pass/lang")
 
     def closeEvent(self, event):
         a = AreYouSure()
@@ -674,7 +721,7 @@ class WorkThread(QtCore.QThread):
     def __init__(self, lingualeo):
         super(WorkThread, self).__init__()
         self.lingualeo = lingualeo
-        self.logger = setLogger(name='workthread')
+        self.logger = setLogger(name='WorkThread')
 
     def __del__(self):
         self.wait()
@@ -718,15 +765,18 @@ class WorkThread(QtCore.QThread):
                 data = {"sent": False,
                         "row": None,
                         "index": None}
+                self.logger.exception("Couldn't upload words")
             finally:
                 self.punched.emit(data)
             time.sleep(0.1)
 
     def stop(self):
         self.terminate()
+        self.logger.debug("Stopped upload")
 
     def getData(self, array, index=0):
         self.array = array[index:]
+        self.logger.debug("Got array of {} words".format(len(self.array)))
 
 
 class ExportDialog(CustomDialog):
@@ -744,7 +794,7 @@ class ExportDialog(CustomDialog):
         self.task.getData(array)
         self.words_count = len(self.array)
         self.lingualeo = lingualeo
-        self.logger = setLogger(name='export_dialog')
+        self.logger = setLogger(name='Export')
         self.initUI()
         self.retranslateUI()
         self.initActions()
@@ -798,6 +848,7 @@ class ExportDialog(CustomDialog):
 
         self.setLayout(layout)
         self.break_button.hide()
+        self.logger.debug("Constructed UI")
 
     def retranslateUI(self):
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
@@ -822,12 +873,14 @@ class ExportDialog(CustomDialog):
         self.setWindowTitle(self.tr("Preparing to export"))
         self.start_button.setText(self.tr("Start"))
         self.break_button.setText(self.tr("Break"))
+        self.logger.debug("Retranslated UI")
 
     def initActions(self):
         self.start_button.clicked.connect(self.changeTask)
         self.break_button.clicked.connect(self.task.stop)
         self.break_button.clicked.connect(self.close)
         self.task.punched.connect(self.onProgress)
+        self.logger.debug("Inited actions")
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
@@ -855,6 +908,7 @@ class ExportDialog(CustomDialog):
             self.start_button.setText(self.tr("Start"))
             self.start_button.setObjectName("start")
             self.break_button.hide()
+        self.logger.debug("{} triggered".format(self.sender().objectName()))
 
     def finish(self):
         self.label.setText(self.tr("Finished"))
@@ -865,7 +919,7 @@ class ExportDialog(CustomDialog):
 
         if data['sent']:
             row = data['row']
-            if row['result'] == 'added':
+            if row['result'] == "added":
                 if not self.lingualeo.isPremium():
                     self.lingualeo.substractMeatballs()
                     self.meatballs_value_label.setText(
@@ -874,6 +928,7 @@ class ExportDialog(CustomDialog):
             self.start_button.click()
             warning = NotificationDialog(self.tr("No Internet Connection"))
             warning.exec_()
+            self.logger.debug("No connection")
             return
 
         self.stat.append(data['row'])
@@ -894,9 +949,11 @@ class ExportDialog(CustomDialog):
                                   "result": "not added",
                                   "tword": "",
                                   "context": i['context']})
+            self.logger.debug("0 meatballs. Upload stopped")
             return
 
         if self.progress_bar.value() == self.progress_bar.maximum():
+            self.logger.debug("{} words tried to upload".format(value))
             self.finish()
 
 
@@ -909,6 +966,7 @@ class StatisticsWindow(CustomDialog):
         self.stat = stat
         self.initUI()
         self.retranslateUI()
+        self.logger = setLogger(name="Statistics")
 
     def initUI(self):
         self.list_view = QtGui.QListWidget()
@@ -945,6 +1003,7 @@ class StatisticsWindow(CustomDialog):
         self.layout.addLayout(grid)
         self.layout.addWidget(self.table)
         self.setLayout(self.layout)
+        self.logger.debug("Created UI")
 
     def createGrid(self):
 
@@ -981,6 +1040,7 @@ class StatisticsWindow(CustomDialog):
             grid.addWidget(color_label, index, 0)
             grid.addWidget(text_label, index, 1)
 
+        self.logger.debug("Statistics GRID created")
         return grid
 
     def resizeEvent(self, event):
@@ -990,6 +1050,7 @@ class StatisticsWindow(CustomDialog):
     def retranslateUI(self):
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.setWindowTitle(self.tr("Statistics"))
+        self.logger.debug("Retranslated UI")
 
 
 def main():
@@ -1002,13 +1063,13 @@ def main():
     logger = setLogger(name='main')
     app = QtGui.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
-    logger.info("New session started")
+    logger.debug("New session started")
     try:
         window = MainWindow()
         window.show()
         sys.exit(app.exec_())
     except Exception:
-        logger.exception("Got error in MainWindow")
+        logger.exception("MainWindow exception")
 
 if __name__ == "__main__":
     main()
