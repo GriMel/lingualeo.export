@@ -499,16 +499,12 @@ class MainWindow(QtGui.QMainWindow):
         """get rid of non-English words"""
         temp = []
         for row in self.array:
-            try:
-                # remove repeated words
-                # list of occurences 5,4,3,2
-                occur = Counter(i['word'] for i in temp)
-                row['word'].encode('ascii')
-                if not occur[row['word']]:
-                    temp.append(row)
-            except UnicodeEncodeError:
-                self.logger.debug("{0} is not English".format(row['word']))
-                continue
+            # remove repeated words
+            # list of occurences 5,4,3,2
+            occur = Counter(i['word'] for i in temp)
+            row['word'].encode('ascii')
+            if not occur[row['word']]:
+                temp.append(row)
 
         ok_count = len(temp)
         wrong_count = len(self.array) - len(temp)
@@ -518,13 +514,8 @@ class MainWindow(QtGui.QMainWindow):
             self.logger.debug("{0} has no English".format(temp))
             return False
         if wrong_count > 0:
-            self.status_bar.showMessage(
-                self.status_bar.currentMessage() + \
-                ": {0} words removed".format(wrong_count)
-                )
-            self.logger.debug("{0} words removed from {0}".format(
-                wrong_count,
-                {(index+1): i['word'] for index, i in enumerate(self.array)}))
+            self.logger.debug("{0} words removed".format(
+                wrong_count))
         self.array = temp[:]
         self.logger.debug("Words are OK")
         return True
@@ -616,14 +607,17 @@ class MainWindow(QtGui.QMainWindow):
             handler.read(only_new_words=self.new_words_radio.isChecked())
             self.array = handler.get()
             self.logger.debug("Export Kindle - Ready!")
-
-        self.logger.debug("{0} words before checking".format(len(self.array)))
+        before = len(self.array)
+        self.logger.debug("{0} words before checking".format(before))
         if not self.wordsOk():
             self.logger.debug("Export refused - Words")
             return
-        self.logger.debug("{0} words after checking".format(len(self.array)))
+        after = len(self.array)
+        self.logger.debug("{0} words after checking".format(after))
+        total = before
+        duplicates = before - after
         try:
-            dialog = ExportDialog(self.array, self.lingualeo)
+            dialog = ExportDialog(self.array, total, duplicates, self.lingualeo)
             dialog.closed.connect(self.clearMessage)
             dialog.exec_()
         except Exception:
@@ -791,6 +785,15 @@ class WorkThread(QtCore.QThread):
                         "row": None,
                         "index": None}
                 self.logger.debug("Couldn't upload words")
+            except UnicodeEncodeError:
+                row = {"word": word,
+                       "result": self.RESULTS['no_tr'],
+                       "tword": '',
+                       "context": context}
+                data = {"sent": True,
+                        "row": row,
+                        "index": index+1}
+                self.logger.debug("{0} is not English".format(word))
             finally:
                 self.punched.emit(data)
             time.sleep(0.1)
@@ -804,16 +807,18 @@ class WorkThread(QtCore.QThread):
         self.logger.debug("Got array of {0} words".format(len(self.array)))
 
 
-class ExportDialog(CustomDialog):
+class ExportDialog(CustomDialog, Results):
 
     ICON_FILE = os.path.join("src", "pics", "export.ico")
     closed = QtCore.pyqtSignal()
 
-    def __init__(self, array, lingualeo):
+    def __init__(self, array, total, duplicates, lingualeo):
 
         super(ExportDialog, self).__init__()
         self.array = array
-        self.stat = list()
+        self.total = total
+        self.duplicates = duplicates
+        self.stat = []
         self.value = 0
         self.task = WorkThread(lingualeo)
         self.task.getData(array)
@@ -843,25 +848,40 @@ class ExportDialog(CustomDialog):
         self.meatballs_value_label = QtGui.QLabel()
         info_grid_layout.addWidget(self.meatballs_title_label, 2, 0)
         info_grid_layout.addWidget(self.meatballs_value_label, 2, 1)
+        self.total_words_title_label = QtGui.QLabel()
+        self.total_words_value_label = QtGui.QLabel()
+        info_grid_layout.addWidget(self.total_words_title_label, 3, 0)
+        info_grid_layout.addWidget(self.total_words_value_label, 3, 1)
+        self.duplicate_words_title_label = QtGui.QLabel()
+        self.duplicate_words_value_label = QtGui.QLabel()
+        info_grid_layout.addWidget(self.duplicate_words_title_label, 4, 0)
+        info_grid_layout.addWidget(self.duplicate_words_value_label, 4, 1)
+        self.prepared_words_title_label = QtGui.QLabel()
+        self.prepared_words_value_label = QtGui.QLabel()
+        info_grid_layout.addWidget(self.prepared_words_title_label, 5, 0)
+        info_grid_layout.addWidget(self.prepared_words_value_label, 5, 1)
 
         info_layout.addWidget(self.avatar_label)
         info_layout.addLayout(info_grid_layout)
 
         warning_layout = QtGui.QHBoxLayout()
         self.warning_info_label = QtGui.QLabel()
+        self.warning_info_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.warning_info_label.setFrameShape(QtGui.QFrame.WinPanel)
+        self.warning_info_label.setFrameShadow(QtGui.QFrame.Raised)
+        self.warning_info_label.hide()
         warning_layout.addWidget(self.warning_info_label)
 
         progress_layout = QtGui.QVBoxLayout()
         hor_layout = QtGui.QHBoxLayout()
-        self.label = QtGui.QLabel()
         self.progress_bar = QtGui.QProgressBar(self)
         self.progress_bar.setRange(0, self.words_count)
+        self.progress_bar.setAlignment(QtCore.Qt.AlignCenter)
         self.start_button = QtGui.QPushButton()
         self.start_button.setObjectName("start")
         self.break_button = QtGui.QPushButton()
         self.break_button.setObjectName("break")
 
-        progress_layout.addWidget(self.label)
         progress_layout.addWidget(self.progress_bar)
         hor_layout.addWidget(self.start_button)
         hor_layout.addWidget(self.break_button)
@@ -882,6 +902,7 @@ class ExportDialog(CustomDialog):
         avatar = QtGui.QPixmap()
         avatar.loadFromData(self.lingualeo.avatar)
         self.avatar_label.setPixmap(avatar)
+        self.avatar_label.setAlignment(QtCore.Qt.AlignCenter)
         # self.avatar_label.setScaledContents(True)
 
         # INFO GRID
@@ -896,7 +917,14 @@ class ExportDialog(CustomDialog):
         if not self.lingualeo.isEnoughMeatballs(self.words_count):
             self.warning_info_label.setText(
                 self.tr("WARNING: Meatballs < words"))
-            self.warning_info_label.setStyleSheet("color:red")
+            self.warning_info_label.setStyleSheet("color:red;font-weight:bold")
+            self.warning_info_label.show()
+        self.total_words_title_label.setText(self.tr("Total words:"))
+        self.total_words_value_label.setText(str(self.total))
+        self.duplicate_words_title_label.setText(self.tr("Duplicates removed:"))
+        self.duplicate_words_value_label.setText(str(self.duplicates))
+        self.prepared_words_title_label.setText(self.tr("Prepared to export:"))
+        self.prepared_words_value_label.setText(str(self.words_count))
         self.setWindowTitle(self.tr("Preparing to export"))
         self.start_button.setText(self.tr("Start"))
         self.break_button.setText(self.tr("Break"))
@@ -938,7 +966,7 @@ class ExportDialog(CustomDialog):
         self.logger.debug("{0} triggered".format(self.sender().objectName()))
 
     def finish(self):
-        self.label.setText(self.tr("Finished"))
+        self.progress_bar.setFormat(self.tr("Finished"))
         self.break_button.setText(self.tr("Close"))
         self.start_button.hide()
 
