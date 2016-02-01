@@ -252,6 +252,7 @@ class MainWindow(QtGui.QMainWindow):
         self.auth_layout.addWidget(self.pass_edit, 1, 1, 1, 1)
 
         self.main_label = QtGui.QLabel()
+        self.main_label.setAlignment(QtCore.Qt.AlignCenter)
 
         self.input_radio = QtGui.QRadioButton()
         self.input_radio.setObjectName("input")
@@ -342,15 +343,18 @@ class MainWindow(QtGui.QMainWindow):
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.email_label.setText("e-mail")
         self.pass_label.setText("password")
-        self.main_label.setText(self.tr("<center>Choose the source</center>"))
+        self.main_label.setText(self.tr("Choose the source"))
         self.input_radio.setText(self.tr("Input"))
+        self.input_radio.setStyleSheet("font-weight:bold")
         self.input_word_label.setText(self.tr("word"))
         self.input_context_label.setText(self.tr("context"))
 
         self.text_radio.setText(self.tr("Text"))
+        self.text_radio.setStyleSheet("font-weight:bold")
         self.text_push.setText(self.tr("Path"))
 
         self.kindle_radio.setText(self.tr("Kindle"))
+        self.kindle_radio.setStyleSheet("font-weight:bold")
         self.kindle_hint.setText(self.tr(
             "Base is here:<br>Kindle/system/vocabulary/vocab.db"))
         self.all_words_radio.setText(self.tr("All words (recommended)"))
@@ -400,7 +404,7 @@ class MainWindow(QtGui.QMainWindow):
         self.new_words_radio.setEnabled(kindle)
         self.kindle_push.setEnabled(kindle)
         self.kindle_path.setEnabled(kindle)
-        self.logger.debug("Finished checkof elements state - Disabled/Enabled")
+        self.logger.debug("Finished check of elements state - Disabled/Enabled")
 
     def lingualeoOk(self):
         """check if lingualeo is suitable for export"""
