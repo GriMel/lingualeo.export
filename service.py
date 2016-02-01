@@ -72,7 +72,7 @@ class Lingualeo(object):
         except (IndexError, KeyError):
             return {"is_exist": False,
                     "word": word,
-                    "tword": "no translation"}
+                    "tword": ""}
 
     def add_word(self, word, tword, context=""):
         """add new word"""
