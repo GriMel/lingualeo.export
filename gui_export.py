@@ -31,6 +31,12 @@ def centerUI(self):
     qr.moveCenter(cp)
     self.move(qr.topLeft())
 
+def createSeparator():
+    separator = QtGui.QFrame()
+    separator.setFrameShape(QtGui.QFrame.HLine)
+    separator.setFrameShadow(QtGui.QFrame.Sunken)
+    return separator
+
 '''
 @FROZEN
 def playSound(name):
@@ -299,18 +305,29 @@ class MainWindow(QtGui.QMainWindow):
         # @FROZEN
         # self.bottom_layout.addWidget(self.repair_push)
 
+        self.source_group = QtGui.QButtonGroup()
+        self.source_group.addButton(self.input_radio)
+        self.source_group.addButton(self.text_radio)
+        self.source_group.addButton(self.kindle_radio)
+
+        h_lines = []
+        for i in range(4):
+            h = createSeparator()
+            h_lines.append(h)
+
         self.main_layout.addLayout(self.auth_layout)
+        self.main_layout.addWidget(h_lines[0])
         self.main_layout.addWidget(self.main_label)
         self.main_layout.addWidget(self.input_radio)
         self.main_layout.addLayout(self.input_layout)
-        self.main_layout.addStretch(1)
+        self.main_layout.addWidget(h_lines[1])
         self.main_layout.addWidget(self.text_radio)
         self.main_layout.addLayout(self.text_layout)
-        self.main_layout.addStretch(1)
+        self.main_layout.addWidget(h_lines[2])
         self.main_layout.addWidget(self.kindle_radio)
         self.main_layout.addWidget(self.kindle_hint)
         self.main_layout.addLayout(self.kindle_layout)
-        self.main_layout.addStretch(1)
+        self.main_layout.addWidget(h_lines[3])
         self.main_layout.addLayout(self.bottom_layout)
         self.status_bar = QtGui.QStatusBar()
         self.setStatusBar(self.status_bar)
@@ -850,8 +867,10 @@ class ExportDialog(CustomDialog):
         hor_layout.addWidget(self.break_button)
         progress_layout.addLayout(hor_layout)
 
+        h_line = createSeparator()
         layout.addLayout(info_layout)
         layout.addLayout(warning_layout)
+        layout.addWidget(h_line)
         layout.addLayout(progress_layout)
 
         self.setLayout(layout)
