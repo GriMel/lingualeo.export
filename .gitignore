@@ -15,3 +15,6 @@ tests.py
 makefile
 dbs/
 src/log.out
+*.sublime-settings
+*.json
+temp/
