@@ -733,7 +733,14 @@ class MainWindow(QtGui.QMainWindow):
         event.ignore()
 
 
-class WorkThread(QtCore.QThread):
+class Results:
+    RESULTS = {'ad': "added",
+               'no_ad': "not added",
+               'no_tr': "no translation",
+               'ex': "exists"}
+
+
+class WorkThread(QtCore.QThread, Results):
 
     punched = QtCore.pyqtSignal(dict)
 
@@ -753,22 +760,25 @@ class WorkThread(QtCore.QThread):
             try:
                 word = i.get('word').lower()
                 context = i.get('context', '')
+                # Detect non-Unicode characters
+                word.encode('ascii')
                 response = self.lingualeo.get_translate(word)
                 translate = response['tword']
                 exist = response['is_exist']
                 if exist:
-                    result = 'exist'
+                    result = self.RESULTS['ex']
                 else:
-                    if translate == 'no translation':
-                        translate = ""
-                        result = "no translation"
+                    if translate == '':
+                        result = self.RESULTS['no_tr']
                     else:
                         # @TEMP solution - to detect mysterious latin
-                        before = "added"
+                        before = self.RESULTS['ad']
                         response = self.lingualeo.add_word(word,
                                                            translate,
                                                            context)
-                        after = "added" if response.json()['is_new'] else "no translation"
+                        after = self.RESULTS['ad'] if \
+                            response.json()['is_new'] \
+                            else self.RESULTS['no_tr']
                         if before != after:
                             self.logger.debug("Mysterious - {0}".format(word))
                         result = after
@@ -974,7 +984,7 @@ class ExportDialog(CustomDialog, Results):
 
         if data['sent']:
             row = data['row']
-            if row['result'] == "added":
+            if row['result'] == self.RESULTS['ad']:
                 if not self.lingualeo.isPremium():
                     self.lingualeo.substractMeatballs()
                     self.meatballs_value_label.setText(
@@ -988,20 +998,19 @@ class ExportDialog(CustomDialog, Results):
 
         self.stat.append(data['row'])
         self.value += 1
-        self.label.setText(
-            "{0} words processed out of {1}".format(self.value,
-         	                                        self.words_count))
         self.progress_bar.setValue(self.value)
+        self.progress_bar.setFormat(
+            "{0} words processed out of {1}".format(self.value,
+                                                    self.words_count))
         if self.lingualeo.meatballs == 0:
             self.task.stop()
             self.progress_bar.setValue(self.progress_bar.maximum())
             self.warning_info_label.setText(
-                self.tr("No meatballs. Upload stopped")
-                )
+                self.tr("No meatballs. Upload stopped"))
             self.finish()
             for i in self.array[self.value:]:
                 self.stat.append({"word": i['word'],
-                                  "result": "not added",
+                                  "result": self.RESULTS['no_ad'],
                                   "tword": "",
                                   "context": i['context']})
             self.logger.debug("0 meatballs. Upload stopped")
@@ -1012,7 +1021,7 @@ class ExportDialog(CustomDialog, Results):
             self.finish()
 
 
-class StatisticsWindow(CustomDialog):
+class StatisticsWindow(CustomDialog, Results):
 
     ICON_FILE = os.path.join("src", "pics", "statistics.ico")
 
@@ -1029,11 +1038,11 @@ class StatisticsWindow(CustomDialog):
         self.table.setColumnCount(3)
         stat = sorted(self.stat, key=itemgetter('result'))
         for item in stat:
-            if item.get("result") == "added":
+            if item.get("result") == self.RESULTS['ad']:
                 brush = QtCore.Qt.green
-            elif item.get("result") == "no translation":
+            elif item.get("result") == self.RESULTS['no_tr']:
                 brush = QtCore.Qt.yellow
-            elif item.get("result") == "not added":
+            elif item.get("result") == self.RESULTS['no_ad']:
                 brush = QtCore.Qt.white
             else:
                 brush = QtCore.Qt.red
@@ -1064,9 +1073,9 @@ class StatisticsWindow(CustomDialog):
 
         total = len(self.stat)
         result = Counter(i["result"] for i in self.stat)
-        added = result["added"]
-        not_added = result["not added"]
-        wrong = result["no translation"]
+        added = result[self.RESULTS['ad']]
+        not_added = result[self.RESULTS['no_ad']]
+        wrong = result[self.RESULTS['no_tr']]
         exist = len(self.stat) - (added+not_added) - wrong
         grid = QtGui.QGridLayout()
 
