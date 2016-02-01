@@ -17,12 +17,23 @@ class Base(object):
 
 
 class Kindle(Base):
-    def read(self):
+    def read(self, only_new_words=False):
         conn = sqlite3.connect(self.source)
-        for row in conn.execute(
-            "SELECT WORDS.stem, LOOKUPS.usage \
-                FROM WORDS INNER JOIN LOOKUPS ON \
-                    WORDS.id = LOOKUPS.word_key WHERE WORDS.lang = 'en'"):
+        command = None
+        if only_new_words:
+            command = "SELECT WORDS.stem, LOOKUPS.usage \
+                        FROM WORDS INNER JOIN LOOKUPS ON \
+                            WORDS.id = LOOKUPS.word_key \
+                                WHERE \
+                                    WORDS.lang = 'en' AND \
+                                        WORDS.category = 0"
+        else:
+            command = "SELECT WORDS.stem, LOOKUPS.usage \
+                        FROM WORDS INNER JOIN LOOKUPS ON \
+                            WORDS.id = LOOKUPS.word_key \
+                                WHERE \
+                                    WORDS.lang = 'en'"
+        for row in conn.execute(command):
             self.data.append({'word': row[0], 'context': row[1]})
         conn.close()
 
