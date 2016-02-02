@@ -1003,7 +1003,7 @@ class ExportDialog(CustomDialog, Results):
         self.value += 1
         self.progress_bar.setValue(self.value)
         self.progress_bar.setFormat(
-            "{0} words processed out of {1}".format(self.value,
+            self.tr("{0} words processed out of {1}").format(self.value,
                                                     self.words_count))
         if self.lingualeo.meatballs == 0:
             self.task.stop()
