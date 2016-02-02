@@ -506,7 +506,6 @@ class MainWindow(QtGui.QMainWindow):
             # remove repeated words
             # list of occurences 5,4,3,2
             occur = Counter(i['word'] for i in temp)
-            row['word'].encode('ascii')
             if not occur[row['word']]:
                 temp.append(row)
 
