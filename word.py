@@ -1,4 +1,6 @@
 import sqlite3
+import pysrt
+import re
 
 
 class Base(object):
@@ -48,3 +50,22 @@ class Text(Base):
 class Input(Base):
     def read(self):
         self.data = self.source
+
+
+class Subs(Base):
+    def read(self):
+        allwords=list()
+        subs = pysrt.open(self.source[0])
+        for sub in subs:
+            text=sub.text
+            text=re.sub('<[^<]+?>', '', text)
+            chars=[",",".","!","?","»","«","=","—","_","@","--","(",")",":"]
+            for ch in chars:
+                text=text.replace(ch,"")
+            words = text.split()
+            for word in words:
+                if word != "-":
+                    if word not in allwords:
+                        self.data.append({'word': word, 'context': text})
+
+            allwords=allwords + words
