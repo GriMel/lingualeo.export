@@ -32,7 +32,6 @@ try:
     lingualeo.auth()
     exist = 0
     added = 0
-    print(len(handler.get()))
     for row in handler.get():
         word = row.get('word').lower()
         context = row.get('context', '')
