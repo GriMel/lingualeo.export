@@ -53,19 +53,20 @@ class Input(Base):
 
 
 class Subs(Base):
+    """class for .srt subtitlse parser"""
     def read(self):
+        """reader like in Text,Kindle and Input"""
         allwords=list()
         subs = pysrt.open(self.source[0])
         for sub in subs:
             text=sub.text
             text=re.sub('<[^<]+?>', '', text)
-            chars=[",",".","!","?","»","«","=","—","_","@","--","(",")",":"]
+            chars=[",",".","!","?","»","«","=","—","_","@","--","(",")",":","- "]
             for ch in chars:
                 text=text.replace(ch,"")
             words = text.split()
             for word in words:
-                if word != "-":
-                    if word not in allwords:
-                        self.data.append({'word': word, 'context': text})
+                if word not in allwords:
+                    self.data.append({'word': word, 'context': text})
 
             allwords=allwords + words
