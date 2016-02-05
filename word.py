@@ -1,4 +1,6 @@
 import sqlite3
+import pysrt
+import re
 
 
 class Base(object):
@@ -48,3 +50,23 @@ class Text(Base):
 class Input(Base):
     def read(self):
         self.data = self.source
+
+
+class Subs(Base):
+    """class for .srt subtitlse parser"""
+    def read(self):
+        """reader like in Text,Kindle and Input"""
+        allwords=list()
+        subs = pysrt.open(self.source[0])
+        for sub in subs:
+            text=sub.text
+            text=re.sub('<[^<]+?>', '', text)
+            chars=[",",".","!","?","»","«","=","—","_","@","--","(",")",":","- "]
+            for ch in chars:
+                text=text.replace(ch,"")
+            words = text.split()
+            for word in words:
+                if word not in allwords:
+                    self.data.append({'word': word, 'context': text})
+
+            allwords=allwords + words
