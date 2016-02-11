@@ -14,6 +14,8 @@ from PyQt4 import QtCore, QtGui
 from requests.exceptions import ConnectionError as NoConnection, Timeout
 from collections import Counter
 from operator import itemgetter
+from subprocess import check_call
+
 from word import Kindle, Text
 from service import Lingualeo
 from log_conf import setLogger
@@ -300,14 +302,13 @@ class MainWindow(QtGui.QMainWindow):
         self.export_push = QtGui.QPushButton()
         self.truncate_push = QtGui.QPushButton()
         self.truncate_push.setEnabled(False)
-        # @FROZEN
-        # self.repair_push = QtGui.QPushButton()
-        # self.repair_push.hide()
+        self.repair_push = QtGui.QPushButton()
+        self.repair_push.hide()
         self.bottom_layout = QtGui.QHBoxLayout()
         self.bottom_layout.addWidget(self.export_push)
         self.bottom_layout.addWidget(self.truncate_push)
-        # @FROZEN
-        # self.bottom_layout.addWidget(self.repair_push)
+
+        self.bottom_layout.addWidget(self.repair_push)
 
         self.source_group = QtGui.QButtonGroup()
         self.source_group.addButton(self.input_radio)
@@ -367,8 +368,7 @@ class MainWindow(QtGui.QMainWindow):
 
         self.export_push.setText(self.tr("Export"))
         self.truncate_push.setText(self.tr("Truncate"))
-        # @FROZEN
-        # self.repair_push.setText(self.tr("Repair"))
+        self.repair_push.setText(self.tr("Repair"))
 
         # retranslate menu
         self.main_menu.setTitle(self.tr("Main menu"))
@@ -490,8 +490,9 @@ class MainWindow(QtGui.QMainWindow):
         # database is malformed
         except sqlite3.DatabaseError:
             self.status_bar.showMessage(
-                self.tr("Kindle database is malformed"))
+                self.tr("Database is malformed. Click 'Repair'"))
             self.logger.debug("{0} is malformed".format(path))
+            self.repair_push.show()
             return False
         # database is empty
         if not data:
@@ -525,35 +526,54 @@ class MainWindow(QtGui.QMainWindow):
         self.array = temp[:]
         self.logger.debug("Words are OK")
         return True
-    '''
-    @FROZEN
+
     def kindleRepairDatabase(self):
         """tool for repairing Kindle db"""
 
         old_name = self.file_name
-        conn = sqlite3.connect(old_name)
-        new_name = "{0}_new.db".format(
-            old_name[:-old_name.rindex('.')])
+        _, new_name = os.path.split(old_name)
+        self.logger.debug("New name of repair {}".format(new_name))
         temp_sql = "temp.sql"
-        i = 0
+
+        i = 2
+        temp_name = new_name
         while os.path.exists(new_name):
-            new_name = "{0}{1}".format(
-                new_name[:-new_name.rindex('.'), i])
+            new_name = "{0}{1}.db".format(temp_name[:temp_name.index('.db')], i)
             i += 1
-        with conn:
-            conn.execute(".output {0}".format(temp_sql))
-            conn.execute(".dump")
-        conn = sqlite3.connect(new_name)
-        sql = None
-        with open(temp_sql) as f:
-            sql = f.read()
-        conn.executescript(sql)
-        conn.commit()
+        if os.name == 'nt':
+            sqlite_ex = os.path.join("src",
+                                     "sqlite_win", "sqlite3.exe")
+        # in case of mac 
+        elif os.name == 'posix':
+            sqlite_ex = os.path.join("src",
+                                     "sqlite_lin", "sqlite3")
+        # @FROZEN else for MacOS
+
+        check_call([sqlite_ex,
+                    old_name,
+                    ".mode insert",
+                    ".output {}".format(temp_sql),
+                    ".dump",
+                    ".exit"])
+        check_call([sqlite_ex,
+                    new_name,
+                    ".read {}".format(temp_sql),
+                    ".exit"])
+        # 1) remove temporary sql
+        # 2) hide repair button
+        # 3) set new file path
         os.remove(temp_sql)
         self.repair_push.hide()
+        self.kindle_path.setText(new_name)
         self.status_bar.showMessage(self.tr(
-            "Base repaired. Try to export"))
-    '''
+            "Ready to export."))
+        text = self.tr("""
+            Repair was successful.<br>
+            Some words are lost.<br>
+            New base saved as <b>{}</b>
+            """.format(new_name))
+        notif = NotificationDialog(title="Repair", text=text)
+        notif.exec_()
 
     def getSource(self):
 
@@ -590,30 +610,48 @@ class MainWindow(QtGui.QMainWindow):
             word = self.input_word_edit.text().lower().strip()
             context = self.input_context_edit.text()
             self.array = [{'word': word, 'context': context}]
+            before = 1
             self.logger.debug("Export Input - Ready!")
         elif text:
+            self.file_name = self.text_path.text()
             if not self.textOk():
                 self.logger.debug("Export refused - Text")
                 return
-            self.file_name = self.text_path.text()
             self.status_bar.showMessage(self.tr("Txt > Lingualeo"))
             self.file_name = self.text_path.text()
             handler = Text(self.file_name)
             handler.read()
             self.array = handler.get()
+            before = len(self.array)
             self.logger.debug("Export Text - Ready!")
 
         elif kindle:
+            self.file_name = self.kindle_path.text()
             if not self.kindleOk():
                 self.logger.debug("Export refused - Kindle")
                 return
-            self.file_name = self.kindle_path.text()
             self.status_bar.showMessage(self.tr("Kindle > Lingualeo"))
             handler = Kindle(self.file_name)
-            handler.read(only_new_words=self.new_words_radio.isChecked())
+            # @TEMPORARY
+            # The main idea is that our user
+            # wants to see the same count of words as 
+            # on Kindle. We don't use word but stem
+            # so we temporary count distinct words.
+            # Until nltk module is implemented,
+            # this will be the temporary solution
+            only_new_words=self.new_words_radio.isChecked()
+            conn = sqlite3.connect(self.file_name)
+            if only_new_words:
+                command = "SELECT COUNT(DISTINCT word)\
+                            FROM WORDS WHERE category = 0"
+            else:
+                command = "SELECT COUNT(DISTINCT word)\
+                            FROM WORDS"
+            cur = conn.execute(command)
+            before = cur.fetchone()[0]
+            handler.read(only_new_words)
             self.array = handler.get()
             self.logger.debug("Export Kindle - Ready!")
-        before = len(self.array)
         self.logger.debug("{0} words before checking".format(before))
         if not self.wordsOk():
             self.logger.debug("Export refused - Words")
@@ -683,8 +721,7 @@ class MainWindow(QtGui.QMainWindow):
         self.kindle_radio.clicked.connect(self.getSource)
         self.export_push.clicked.connect(self.exportWords)
         self.truncate_push.clicked.connect(self.kindleTruncate)
-        # @FROZEN
-        # self.repair_push.clicked.connect(self.kindleRepairDatabase)
+        self.repair_push.clicked.connect(self.kindleRepairDatabase)
         self.kindle_push.clicked.connect(self.setPath)
         self.text_push.clicked.connect(self.setPath)
         # actions for menu

@@ -17,11 +17,19 @@ def compile_script(folderName):
 
 
 def copytree(src, dst):
+    """copying files"""
+    if os.name == 'nt':
+        ignored_folders = ['sqlite_lin']
+    elif os.name == 'posix':
+        ignored_folders = ['sqlite_win']
     for item in os.listdir(src):
         s = os.path.join(src, item)
         d = os.path.join(dst, src, item)
         if os.path.isdir(s):
-            shutil.copytree(s, d)
+            if any(w in s for w in  ignored_folders):
+                continue
+            else:
+                shutil.copytree(s, d)
         else:
             # to ignore src.ini
             continue
