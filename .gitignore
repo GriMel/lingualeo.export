@@ -10,11 +10,10 @@ dist/
 new.py
 Kindleo*
 *.js
-tests.py
 *.ts
 makefile
 dbs/
 src/log.out
 *.sublime-settings
 *.json
-temp/
+sandbox/

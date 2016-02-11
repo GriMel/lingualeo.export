@@ -35,6 +35,7 @@ def main():
     version = args.version
     system = 'win' if os.name == 'nt' else 'lin'
     name = "Kindleo_{}_{}".format(version, system)
+    name = os.path.join("releases", name)
     if os.path.exists(name):
         print("Folder {} already exists".format(name))
         return

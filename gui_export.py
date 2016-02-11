@@ -9,9 +9,9 @@ import sys
 import os
 import sqlite3
 import time
+import traceback
 from PyQt4 import QtCore, QtGui
 from requests.exceptions import ConnectionError as NoConnection, Timeout
-
 from collections import Counter
 from operator import itemgetter
 from word import Kindle, Text
@@ -131,21 +131,21 @@ class AreYouSure(CustomDialog):
             & ~QtCore.Qt.WindowContextHelpButtonHint)
         layout = QtGui.QVBoxLayout()
         hor_lay = QtGui.QHBoxLayout()
-        self.label = QtGui.QLabel()
+        self.sure_label = QtGui.QLabel()
         self.check_item = QtGui.QCheckBox()
         self.yes_button = QtGui.QPushButton()
         self.no_button = QtGui.QPushButton()
         hor_lay.addWidget(self.yes_button)
         hor_lay.addWidget(self.no_button)
         layout.addWidget(self.check_item)
-        layout.addWidget(self.label)
+        layout.addWidget(self.sure_label)
         layout.addLayout(hor_lay)
         self.setLayout(layout)
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Exit"))
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
-        self.label.setText(self.tr("Are you sure to quit?"))
+        self.sure_label.setText(self.tr("Are you sure to quit?"))
         self.yes_button.setText(self.tr("Yes"))
         self.no_button.setText(self.tr("No"))
         self.check_item.setText(self.tr("Save e-mail/password"))
@@ -165,8 +165,9 @@ class NotificationDialog(CustomDialog):
     """dialog for notifications - 'Connection Lost' etc"""
     ICON_FILE = os.path.join("src", "pics", "warning.ico")
 
-    def __init__(self, text):
+    def __init__(self, title, text):
         super(NotificationDialog, self).__init__()
+        self.title = title
         self.text = text
         self.initUI()
         self.retranslateUI()
@@ -174,15 +175,17 @@ class NotificationDialog(CustomDialog):
 
     def initUI(self):
         layout = QtGui.QVBoxLayout()
-        self.label = QtGui.QLabel()
+        self.text_label = QtGui.QLabel()
+        self.text_label.setAlignment(QtCore.Qt.AlignCenter)
         self.ok_button = QtGui.QPushButton()
-        layout.addWidget(self.label)
+        layout.addWidget(self.text_label)
         layout.addWidget(self.ok_button)
         self.setLayout(layout)
 
     def retranslateUI(self):
+        self.setWindowTitle(self.title)
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
-        self.label.setText(self.text)
+        self.text_label.setText(self.text)
         self.ok_button.setText("OK")
 
     def initActions(self):
@@ -619,13 +622,9 @@ class MainWindow(QtGui.QMainWindow):
         self.logger.debug("{0} words after checking".format(after))
         total = before
         duplicates = before - after
-        try:
-            dialog = ExportDialog(self.array, total, duplicates, self.lingualeo)
-            dialog.closed.connect(self.clearMessage)
-            dialog.exec_()
-        except Exception:
-            self.logger.exception("Dialog Exception")
-            sys.exit()
+        dialog = ExportDialog(self.array, total, duplicates, self.lingualeo)
+        dialog.closed.connect(self.clearMessage)
+        dialog.exec_()
 
     def kindleTruncate(self):
         """truncate kindle database"""
@@ -637,6 +636,15 @@ class MainWindow(QtGui.QMainWindow):
         if not self.kindleOk():
             self.logger.debug("Truncate not OK - {0}".format(self.file_name))
             return
+        
+        # Show warning dialog
+        title = self.tr("Warning")
+        text = self.tr("Before truncating turn Wi-Fi on your Kindle off.")
+        warning = NotificationDialog(title=title,
+                                     text=text)
+        warning.exec_()
+
+        # Show additional prompt
         reply = QtGui.QMessageBox.question(
                     self, 'Message', 'Are you sure to truncate?',
                     QtGui.QMessageBox.Yes | QtGui.QMessageBox.No,
@@ -994,7 +1002,8 @@ class ExportDialog(CustomDialog, Results):
                         str(self.lingualeo.meatballs))
         else:
             self.start_button.click()
-            warning = NotificationDialog(self.tr("No Internet Connection"))
+            warning = NotificationDialog(self.tr("Internet error"),
+                                         self.tr("No Internet Connection"))
             warning.exec_()
             self.logger.debug("No connection")
             return
@@ -1119,24 +1128,83 @@ class StatisticsWindow(CustomDialog, Results):
         self.setWindowTitle(self.tr("Statistics"))
         self.logger.debug("Retranslated UI")
 
+class ExceptionDialog(QtGui.QDialog):
+
+    def __init__(self, short_trace, full_trace):
+        super(ExceptionDialog, self).__init__()
+        self.full = full_trace+"\n\n" + short_trace
+        self.initUI()
+        self.retranslateUI()
+        self.initActions()
+
+    def initUI(self):
+        self.error_label = QtGui.QLabel()
+        self.more_edit = QtGui.QTextEdit()
+        self.more_edit.setReadOnly(True)
+        self.more_edit.hide()
+        self.show_hide_button = QtGui.QPushButton()
+        self.show_hide_button.setIcon(QtGui.QIcon.fromTheme("go-down"))
+        self.ok_button = QtGui.QPushButton()
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(self.error_label)
+        layout.addWidget(self.show_hide_button)
+        layout.addWidget(self.more_edit)
+        layout.addWidget(self.ok_button)
+        self.setLayout(layout)
+
+    def retranslateUI(self):
+        self.setWindowTitle(self.tr("Exception occured"))
+        #@FROZEN self.setWindowIcon()
+        short_text = self.tr("""
+            Exception occured.
+            """)
+        self.error_label.setText(short_text)
+        self.more_edit.setText(self.full)
+        self.show_hide_button.setText(self.tr("Show"))
+        self.ok_button.setText("OK")
+
+    def changeHider(self):
+        if self.more_edit.isHidden():
+            icon = QtGui.QIcon.fromTheme("go-up")
+            self.show_hide_button.setText(self.tr("Hide"))
+            self.more_edit.show()
+        else:
+            icon = QtGui.QIcon.fromTheme("go-down")
+            self.show_hide_button.setText(self.tr("Show"))
+            self.more_edit.hide()
+            for i in range(0, 10):
+                QtGui.QApplication.processEvents()
+            self.resize(self.minimumSizeHint())
+        self.show_hide_button.setIcon(icon)
+
+
+    def initActions(self):
+        self.ok_button.clicked.connect(self.close)
+        self.show_hide_button.clicked.connect(self.changeHider)
 
 def main():
     sys._excepthook = sys.excepthook
-
-    def exception_hook(exctype, value, traceback):
-        sys._excepthook(exctype, value, traceback)
-        sys.exit(1)
-    sys.excepthook = exception_hook
     logger = setLogger(name='main')
+
+    def exception_hook(exctype, ex, tb):
+        sys._excepthook(exctype, ex, tb)
+        full_trace = ''.join(traceback.format_tb(tb))
+        short_trace = '{0}: {1}'.format(exctype, ex)
+        logger.critical(full_trace)
+        logger.critical(short_trace)
+        exc_dialog = ExceptionDialog(short_trace, full_trace)
+        exc_dialog.exec_()
+
+        sys.exit(1)
+
+    sys.excepthook = exception_hook
+    
     app = QtGui.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     logger.debug("New session started")
-    try:
-        window = MainWindow()
-        window.show()
-        sys.exit(app.exec_())
-    except Exception:
-        logger.exception("MainWindow exception")
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
 
 if __name__ == "__main__":
     main()

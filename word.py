@@ -33,8 +33,8 @@ class Kindle(Base):
                             WORDS.id = LOOKUPS.word_key \
                                 WHERE \
                                     WORDS.lang = 'en'"
-        for row in conn.execute(command):
-            self.data.append({'word': row[0], 'context': row[1]})
+        for word, context in conn.execute(command):
+            self.data.append({'word': word, 'context': context})
         conn.close()
 
 
