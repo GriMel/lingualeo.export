@@ -75,7 +75,6 @@ class AboutDialog(CustomDialog):
         self.initUI()
         self.retranslateUI()
         self.initActions()
-        centerUI(self)
 
     def initUI(self):
         layout = QtGui.QVBoxLayout()
