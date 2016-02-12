@@ -1167,6 +1167,9 @@ class StatisticsWindow(CustomDialog, Results):
 
 class ExceptionDialog(QtGui.QDialog):
 
+    ICON_FILE = os.path.join("src", "pics", "error.ico")
+    EMAIL = "GriefMontana@gmail.com"
+
     def __init__(self, short_trace, full_trace):
         super(ExceptionDialog, self).__init__()
         self.full = full_trace+"\n\n" + short_trace
@@ -1182,23 +1185,30 @@ class ExceptionDialog(QtGui.QDialog):
         self.show_hide_button = QtGui.QPushButton()
         self.show_hide_button.setIcon(QtGui.QIcon.fromTheme("go-down"))
         self.ok_button = QtGui.QPushButton()
+        self.send_button = QtGui.QPushButton()
         layout = QtGui.QVBoxLayout()
         layout.addWidget(self.error_label)
         layout.addWidget(self.show_hide_button)
         layout.addWidget(self.more_edit)
-        layout.addWidget(self.ok_button)
+        buttons_layout = QtGui.QHBoxLayout()
+        buttons_layout.addWidget(self.ok_button)
+        buttons_layout.addWidget(self.send_button)
+        layout.addLayout(buttons_layout)
         self.setLayout(layout)
 
     def retranslateUI(self):
-        self.setWindowTitle(self.tr("Exception occured"))
-        #@FROZEN self.setWindowIcon()
-        short_text = self.tr("""
-            Exception occured.
-            """)
+
+        self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
+        self.setWindowTitle(self.tr("Error"))
+        short_text = self.tr("An error occured. Kindleo terminated.")
         self.error_label.setText(short_text)
         self.more_edit.setText(self.full)
-        self.show_hide_button.setText(self.tr("Show"))
+        self.show_hide_button.setText(self.tr("Show details..."))
         self.ok_button.setText("OK")
+        send_link = "mailto:{0}?subject=Kindleo bug&body={1}".format(self.EMAIL,
+                                                                     self.full)
+        self.send_button.setText(self.tr("Send report"))
+        self.send_button.setObjectName(send_link)
 
     def changeHider(self):
         if self.more_edit.isHidden():
