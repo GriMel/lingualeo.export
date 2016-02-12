@@ -237,7 +237,6 @@ class MainWindow(QtGui.QMainWindow):
         self.menu_bar.addAction(self.main_menu.menuAction())
         self.menu_bar.addAction(self.help_menu.menuAction())
         self.setMenuBar(self.menu_bar)
-        self.logger.debug("Created MenuBar")
 
     def initUI(self):
         self.main_widget = QtGui.QWidget(self)
@@ -340,7 +339,6 @@ class MainWindow(QtGui.QMainWindow):
         self.setCentralWidget(self.main_widget)
         self.language_menu = QtGui.QMenu
         self.createMenuBar()
-        self.logger.debug("Constructed UI")
 
     def retranslateUI(self):
         self.setWindowTitle(self.tr("Export to Lingualeo"))
@@ -379,7 +377,6 @@ class MainWindow(QtGui.QMainWindow):
         self.about_action.setText(self.tr("About"))
 
         self.setFixedHeight(self.sizeHint().height())
-        self.logger.debug("Retranslated UI")
 
     def setValidators(self):
         """
@@ -389,7 +386,6 @@ class MainWindow(QtGui.QMainWindow):
         regexp = QtCore.QRegExp("^[a-zA-Z`'-]+(\s+[a-zA-Z`'-]+)*$")
         validator = QtGui.QRegExpValidator(regexp)
         self.input_word_edit.setValidator(validator)
-        self.logger.debug("Set validators for input")
 
     def checkState(self):
         input_state = self.input_radio.isChecked()
@@ -407,7 +403,6 @@ class MainWindow(QtGui.QMainWindow):
         self.new_words_radio.setEnabled(kindle)
         self.kindle_push.setEnabled(kindle)
         self.kindle_path.setEnabled(kindle)
-        self.logger.debug("Finished check of elements state - Disabled/Enabled")
 
     def lingualeoOk(self):
         """check if lingualeo is suitable for export"""
@@ -442,7 +437,7 @@ class MainWindow(QtGui.QMainWindow):
     def textOk(self):
         """check if text is OK"""
         path = self.text_path.text()
-        self.logger.debug("Checking TXT - {0}".self.logger.debug(path))
+        self.logger.debug("Checking TXT - {0}".format(path))
         _, ext = os.path.splitext(path)
         if ext != '.txt':
             self.status_bar.showMessage(
@@ -532,7 +527,6 @@ class MainWindow(QtGui.QMainWindow):
 
         old_name = self.file_name
         _, new_name = os.path.split(old_name)
-        self.logger.debug("New name of repair {}".format(new_name))
         temp_sql = "temp.sql"
 
         i = 2
@@ -589,7 +583,6 @@ class MainWindow(QtGui.QMainWindow):
 
     def clearMessage(self):
         self.status_bar.showMessage("")
-        self.logger.debug("Status bar cleared")
 
     def exportWords(self):
         """kidle/input/word"""
@@ -602,7 +595,7 @@ class MainWindow(QtGui.QMainWindow):
         self.lingualeo = Lingualeo(email, password)
 
         if not self.lingualeoOk():
-            self.logger.debug("Export refused - Text")
+            self.logger.debug("Export refused - Lingualeo")
             return
 
         if input_word:
@@ -729,7 +722,6 @@ class MainWindow(QtGui.QMainWindow):
             i.triggered.connect(self.loadTranslation)
         self.exit_action.triggered.connect(self.close)
         self.about_action.triggered.connect(self.showAbout)
-        self.logger.debug("Inited actions")
 
     def loadTranslation(self):
         app = QtGui.QApplication.instance()
@@ -742,7 +734,6 @@ class MainWindow(QtGui.QMainWindow):
         self.language_translator.load(path)
         app.installTranslator(self.language_translator)
         self.retranslateUI()
-        self.logger.debug("Loaded translation")
 
     def saveDefaults(self, save_email):
         '''save default email and password'''
@@ -754,7 +745,6 @@ class MainWindow(QtGui.QMainWindow):
             self.settings.setValue("password", self.pass_edit.text())
         if self.language:
             self.settings.setValue("language", self.language)
-        self.logger.debug("Saved default email and password")
 
     def loadDefaults(self):
         '''load default email/password and language'''
@@ -772,7 +762,6 @@ class MainWindow(QtGui.QMainWindow):
         # no ini file
         except Exception:
             self.logger.debug("Couldn't load defaults")
-        self.logger.debug("Loaded default email/pass/lang")
 
     def closeEvent(self, event):
         a = AreYouSure()
@@ -886,6 +875,7 @@ class ExportDialog(CustomDialog, Results):
         self.initUI()
         self.retranslateUI()
         self.initActions()
+        self.logger.debug("Inited ExportDialog")
 
     def initUI(self):
         layout = QtGui.QVBoxLayout()
@@ -953,7 +943,6 @@ class ExportDialog(CustomDialog, Results):
 
         self.setLayout(layout)
         self.break_button.hide()
-        self.logger.debug("Constructed UI")
 
     def retranslateUI(self):
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
@@ -986,14 +975,12 @@ class ExportDialog(CustomDialog, Results):
         self.setWindowTitle(self.tr("Preparing to export"))
         self.start_button.setText(self.tr("Start"))
         self.break_button.setText(self.tr("Break"))
-        self.logger.debug("Retranslated UI")
 
     def initActions(self):
         self.start_button.clicked.connect(self.changeTask)
         self.break_button.clicked.connect(self.task.stop)
         self.break_button.clicked.connect(self.close)
         self.task.punched.connect(self.onProgress)
-        self.logger.debug("Inited actions")
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
@@ -1021,7 +1008,6 @@ class ExportDialog(CustomDialog, Results):
             self.start_button.setText(self.tr("Start"))
             self.start_button.setObjectName("start")
             self.break_button.hide()
-        self.logger.debug("{0} triggered".format(self.sender().objectName()))
 
     def finish(self):
         self.progress_bar.setFormat(self.tr("Finished"))
@@ -1080,6 +1066,7 @@ class StatisticsWindow(CustomDialog, Results):
         self.stat = stat
         self.initUI()
         self.retranslateUI()
+        self.logger.debug("Inited Statistics")
 
     def initUI(self):
         self.list_view = QtGui.QListWidget()
@@ -1116,7 +1103,6 @@ class StatisticsWindow(CustomDialog, Results):
         self.layout.addLayout(grid)
         self.layout.addWidget(self.table)
         self.setLayout(self.layout)
-        self.logger.debug("Created UI")
 
     def createGrid(self):
 
@@ -1153,7 +1139,6 @@ class StatisticsWindow(CustomDialog, Results):
             grid.addWidget(color_label, index, 0)
             grid.addWidget(text_label, index, 1)
 
-        self.logger.debug("Statistics GRID created")
         return grid
 
     def resizeEvent(self, event):
@@ -1163,7 +1148,6 @@ class StatisticsWindow(CustomDialog, Results):
     def retranslateUI(self):
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.setWindowTitle(self.tr("Statistics"))
-        self.logger.debug("Retranslated UI")
 
 class ExceptionDialog(QtGui.QDialog):
 
