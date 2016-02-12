@@ -10,6 +10,8 @@ import os
 import sqlite3
 import time
 import traceback
+import json
+import psutil
 from PyQt4 import QtCore, QtGui
 from requests.exceptions import ConnectionError as NoConnection, Timeout
 from collections import Counter
@@ -69,6 +71,7 @@ class AboutDialog(CustomDialog):
     """about authors etc"""
     ICON_FILE = os.path.join("src", "pics", "about.ico")
     ICON_LING_FILE = os.path.join("src", "pics", "lingualeo.ico")
+    DATA_FILE = os.path.join("src", "data", "data.json")
 
     def __init__(self):
         super(AboutDialog, self).__init__()
@@ -83,19 +86,29 @@ class AboutDialog(CustomDialog):
         self.version_label = QtGui.QLabel()
         self.version_label.setAlignment(QtCore.Qt.AlignCenter)
         self.about_label = QtGui.QLabel()
+        self.email_label = QtGui.QLabel()
+        self.email_label.setAlignment(QtCore.Qt.AlignCenter)
 
         self.ok_button = QtGui.QPushButton()
         layout.addWidget(self.icon_label)
         layout.addWidget(self.version_label)
         layout.addWidget(self.about_label)
+        layout.addWidget(self.email_label)
         layout.addWidget(self.ok_button)
         self.setLayout(layout)
 
     def retranslateUI(self):
+
+        with open(self.DATA_FILE) as f:
+            data_info = json.loads(f.read())
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.setWindowTitle(self.tr("About"))
         self.icon_label.setPixmap(QtGui.QPixmap(self.ICON_LING_FILE))
-        self.version_label.setText("Kindleo 0.9.3 beta")
+        version_txt = "Kindleo {0}".format(data_info['version'])
+        self.version_label.setText(version_txt)
+        idea = data_info['idea']
+        author = data_info['author']
+        email = data_info['e-mail']
         self.about_label.setText(self.tr(
             """
             <span>
@@ -105,16 +118,23 @@ class AboutDialog(CustomDialog):
             Kindle vocabulary.<br>
             Specially for users of The-Ebook Amazon forum.
             <br><br>
-            <b>Original idea</b><br>Ilya Isaev<br><br>
-            <b>GUI and some improvements:</b><br> Grigoriy Melnichenko
+            <b>Original idea</b><br>{0}<br><br>
+            <b>GUI and some improvements:</b><br>
+            {1}<br>
             </center>
             </span>
-            """
+            """.format(idea, author)
             ))
+        self.email_label.setText(
+            self.tr("<a href='mailto:{0}'>Send E-mail</a>".format(email)))
         self.ok_button.setText(self.tr("OK"))
+
+    def openEmail(self, link):
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl(link))
 
     def initActions(self):
         self.ok_button.clicked.connect(self.close)
+        self.email_label.linkActivated.connect(self.openEmail)
 
 
 class AreYouSure(CustomDialog):
@@ -206,6 +226,7 @@ class MainWindow(QtGui.QMainWindow):
         self.file_name = None
         self.array = None
         self.lingualeo = None
+        #self.dialog = None
         self.logger = setLogger(name='MainWindow')
         self.initUI()
         self.loadDefaults()
@@ -272,17 +293,17 @@ class MainWindow(QtGui.QMainWindow):
         self.input_layout.addWidget(self.input_context_edit, 1, 1, 1, 1)
         self.text_radio = QtGui.QRadioButton()
         self.text_radio.setObjectName("text")
-        self.text_push = QtGui.QPushButton()
+        self.text_button = QtGui.QPushButton()
         self.text_path = QtGui.QLineEdit()
         self.text_path.setReadOnly(True)
         self.text_layout = QtGui.QHBoxLayout()
-        self.text_layout.addWidget(self.text_push)
+        self.text_layout.addWidget(self.text_button)
         self.text_layout.addWidget(self.text_path)
 
         self.kindle_radio = QtGui.QRadioButton()
         self.kindle_radio.setObjectName("kindle")
         self.kindle_hint = QtGui.QLabel()
-        self.kindle_push = QtGui.QPushButton()
+        self.kindle_button = QtGui.QPushButton()
         self.kindle_path = QtGui.QLineEdit()
         self.kindle_path.setReadOnly(True)
         self.kindle_words_layout = QtGui.QHBoxLayout()
@@ -293,21 +314,21 @@ class MainWindow(QtGui.QMainWindow):
         self.words_radio_group.addButton(self.all_words_radio)
         self.words_radio_group.addButton(self.new_words_radio)
         self.kindle_layout = QtGui.QGridLayout()
-        self.kindle_layout.addWidget(self.kindle_push, 0, 0)
+        self.kindle_layout.addWidget(self.kindle_button, 0, 0)
         self.kindle_layout.addWidget(self.kindle_path, 0, 1)
         self.kindle_layout.addWidget(self.all_words_radio, 1, 0, 1, 0)
         self.kindle_layout.addWidget(self.new_words_radio, 2, 0, 1, 0)
 
-        self.export_push = QtGui.QPushButton()
-        self.truncate_push = QtGui.QPushButton()
-        self.truncate_push.setEnabled(False)
-        self.repair_push = QtGui.QPushButton()
-        self.repair_push.hide()
+        self.export_button = QtGui.QPushButton()
+        self.truncate_button = QtGui.QPushButton()
+        self.truncate_button.setEnabled(False)
+        self.repair_button = QtGui.QPushButton()
+        self.repair_button.hide()
         self.bottom_layout = QtGui.QHBoxLayout()
-        self.bottom_layout.addWidget(self.export_push)
-        self.bottom_layout.addWidget(self.truncate_push)
+        self.bottom_layout.addWidget(self.export_button)
+        self.bottom_layout.addWidget(self.truncate_button)
 
-        self.bottom_layout.addWidget(self.repair_push)
+        self.bottom_layout.addWidget(self.repair_button)
 
         self.source_group = QtGui.QButtonGroup()
         self.source_group.addButton(self.input_radio)
@@ -353,7 +374,7 @@ class MainWindow(QtGui.QMainWindow):
 
         self.text_radio.setText(self.tr("Text"))
         self.text_radio.setStyleSheet("font-weight:bold")
-        self.text_push.setText(self.tr("Path"))
+        self.text_button.setText(self.tr("Path"))
 
         self.kindle_radio.setText(self.tr("Kindle"))
         self.kindle_radio.setStyleSheet("font-weight:bold")
@@ -362,11 +383,11 @@ class MainWindow(QtGui.QMainWindow):
         self.all_words_radio.setText(self.tr("All words (recommended)"))
         self.new_words_radio.setText(self.tr("Only new"))
         self.new_words_radio.setToolTip(self.tr("Words, marked for learning"))
-        self.kindle_push.setText(self.tr("Path"))
+        self.kindle_button.setText(self.tr("Path"))
 
-        self.export_push.setText(self.tr("Export"))
-        self.truncate_push.setText(self.tr("Truncate"))
-        self.repair_push.setText(self.tr("Repair"))
+        self.export_button.setText(self.tr("Export"))
+        self.truncate_button.setText(self.tr("Truncate"))
+        self.repair_button.setText(self.tr("Repair"))
 
         # retranslate menu
         self.main_menu.setTitle(self.tr("Main menu"))
@@ -396,12 +417,12 @@ class MainWindow(QtGui.QMainWindow):
         self.input_context_edit.setEnabled(input_state)
         self.input_word_label.setEnabled(input_state)
         self.input_context_label.setEnabled(input_state)
-        self.text_push.setEnabled(text)
+        self.text_button.setEnabled(text)
         self.text_path.setEnabled(text)
         self.kindle_hint.setEnabled(kindle)
         self.all_words_radio.setEnabled(kindle)
         self.new_words_radio.setEnabled(kindle)
-        self.kindle_push.setEnabled(kindle)
+        self.kindle_button.setEnabled(kindle)
         self.kindle_path.setEnabled(kindle)
 
     def lingualeoOk(self):
@@ -434,11 +455,26 @@ class MainWindow(QtGui.QMainWindow):
         self.logger.debug("Lingualeo is OK")
         return True
 
+    def inputOk(self):
+        """check if input presents"""
+        word = self.input_word_edit.text()
+        print(word)
+        if not word:
+            self.status_bar.showMessage(self.tr("No input"))
+            return False
+        else:
+            return True
+
     def textOk(self):
         """check if text is OK"""
         path = self.text_path.text()
         self.logger.debug("Checking TXT - {0}".format(path))
         _, ext = os.path.splitext(path)
+        if not path:
+            self.status_bar.showMessage(
+                self.tr("No txt file"))
+            self.logger.debug("{0} - no path".format(path))
+            return False
         if ext != '.txt':
             self.status_bar.showMessage(
                 self.tr("Not txt file"))
@@ -466,7 +502,7 @@ class MainWindow(QtGui.QMainWindow):
         _, ext = os.path.splitext(path)
         if ext != '.db':
             self.status_bar.showMessage(
-                self.tr("Not valid file format"))
+                self.tr("Not database"))
             self.logger.debug("{0} - not '.db'")
             return False
 
@@ -475,7 +511,7 @@ class MainWindow(QtGui.QMainWindow):
         cursor = conn.cursor()
         data = None
         try:
-            data = cursor.execute("SELECT * FROM WORDS")
+            data = cursor.execute("SELECT * FROM WORDS").fetchall()
         # no table WORDS
         except sqlite3.OperationalError:
             self.status_bar.showMessage(
@@ -487,7 +523,7 @@ class MainWindow(QtGui.QMainWindow):
             self.status_bar.showMessage(
                 self.tr("Database is malformed. Click 'Repair'"))
             self.logger.debug("{0} is malformed".format(path))
-            self.repair_push.show()
+            self.repair_button.show()
             return False
         # database is empty
         if not data:
@@ -557,7 +593,7 @@ class MainWindow(QtGui.QMainWindow):
         # 2) hide repair button
         # 3) set new file path
         os.remove(temp_sql)
-        self.repair_push.hide()
+        self.repair_button.hide()
         self.kindle_path.setText(new_name)
         self.status_bar.showMessage(self.tr(
             "Ready to export."))
@@ -574,9 +610,9 @@ class MainWindow(QtGui.QMainWindow):
         source = self.sender().objectName()
 
         if 'kindle' not in source:
-            self.truncate_push.setEnabled(False)
+            self.truncate_button.setEnabled(False)
         else:
-            self.truncate_push.setEnabled(True)
+            self.truncate_button.setEnabled(True)
         self.source = source
         self.logger.debug("Selected {0}".format(source))
         self.checkState()
@@ -599,6 +635,9 @@ class MainWindow(QtGui.QMainWindow):
             return
 
         if input_word:
+            if not self.inputOk():
+                self.logger.debug("Export refused - Input")
+                return
             self.status_bar.showMessage(self.tr("Input > Lingualeo"))
             word = self.input_word_edit.text().lower().strip()
             context = self.input_context_edit.text()
@@ -653,9 +692,9 @@ class MainWindow(QtGui.QMainWindow):
         self.logger.debug("{0} words after checking".format(after))
         total = before
         duplicates = before - after
-        dialog = ExportDialog(self.array, total, duplicates, self.lingualeo)
-        dialog.closed.connect(self.clearMessage)
-        dialog.exec_()
+        self.dialog = ExportDialog(self.array, total, duplicates, self.lingualeo)
+        self.dialog.closed.connect(self.clearMessage)
+        self.dialog.exec_()
 
     def kindleTruncate(self):
         """truncate kindle database"""
@@ -712,11 +751,11 @@ class MainWindow(QtGui.QMainWindow):
         self.input_radio.clicked.connect(self.getSource)
         self.text_radio.clicked.connect(self.getSource)
         self.kindle_radio.clicked.connect(self.getSource)
-        self.export_push.clicked.connect(self.exportWords)
-        self.truncate_push.clicked.connect(self.kindleTruncate)
-        self.repair_push.clicked.connect(self.kindleRepairDatabase)
-        self.kindle_push.clicked.connect(self.setPath)
-        self.text_push.clicked.connect(self.setPath)
+        self.export_button.clicked.connect(self.exportWords)
+        self.truncate_button.clicked.connect(self.kindleTruncate)
+        self.repair_button.clicked.connect(self.kindleRepairDatabase)
+        self.kindle_button.clicked.connect(self.setPath)
+        self.text_button.clicked.connect(self.setPath)
         # actions for menu
         for i in self.lang_action_group.actions():
             i.triggered.connect(self.loadTranslation)
@@ -1094,7 +1133,7 @@ class StatisticsWindow(CustomDialog, Results):
             self.table.setItem(row_position, 1, translate)
             self.table.setItem(row_position, 2, context)
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        self.table.resizeRowsToContents()
+        self.table.resizeColumnsToContents()
         header = self.table.horizontalHeader()
         header.setStretchLastSection(True)
 
@@ -1201,23 +1240,25 @@ class ExceptionDialog(QtGui.QDialog):
             self.more_edit.show()
         else:
             icon = QtGui.QIcon.fromTheme("go-down")
-            self.show_hide_button.setText(self.tr("Show"))
+            self.show_hide_button.setText(self.tr("Show details..."))
             self.more_edit.hide()
             for i in range(0, 10):
                 QtGui.QApplication.processEvents()
             self.resize(self.minimumSizeHint())
         self.show_hide_button.setIcon(icon)
 
+    def sendEmail(self):
+
+        link = self.sender().objectName()
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl(link))
 
     def initActions(self):
         self.ok_button.clicked.connect(self.close)
+        self.send_button.clicked.connect(self.sendEmail)
         self.show_hide_button.clicked.connect(self.changeHider)
 
-def main():
-    sys._excepthook = sys.excepthook
-    logger = setLogger(name='main')
-
-    def exception_hook(exctype, ex, tb):
+def exceptionHook(exctype, ex, tb):
+        logger = setLogger(name='exception')
         sys._excepthook(exctype, ex, tb)
         full_trace = ''.join(traceback.format_tb(tb))
         short_trace = '{0}: {1}'.format(exctype, ex)
@@ -1225,6 +1266,7 @@ def main():
         logger.critical(short_trace)
         exc_dialog = ExceptionDialog(short_trace, full_trace)
         exc_dialog.exec_()
+        sys.exit(1)
 
 def detectOtherVersions():
     counter = 0
@@ -1242,9 +1284,10 @@ def detectOtherVersions():
         notif.exec_()
         sys.exit(1)
 
-    sys.excepthook = exception_hook
-    
+def main():
+
     app = QtGui.QApplication(sys.argv)
+    # don't let closing the whole app after any dialog closed
     app.setQuitOnLastWindowClosed(False)
     logger = setLogger(name='main')
     # let only one instance of program running
