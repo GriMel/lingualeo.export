@@ -15,6 +15,7 @@ from requests.exceptions import ConnectionError as NoConnection, Timeout
 from collections import Counter
 from operator import itemgetter
 from subprocess import check_call
+from tendo import singleton
 
 from word import Kindle, Text
 from service import Lingualeo
@@ -1226,12 +1227,36 @@ def main():
         exc_dialog = ExceptionDialog(short_trace, full_trace)
         exc_dialog.exec_()
 
+def detectOtherVersions():
+    counter = 0
+    for i in psutil.pids():
+        try:
+            if ('Kindleo' in psutil.Process(i).name() or
+                any('gui_export' in p for p in psutil.Process(i).cmdline())):
+                counter += 1
+        except psutil.NoSuchProcess:
+            continue
+    if counter > 2:
+        title = "Multiple instances"
+        text = "The program is already running"
+        notif = NotificationDialog(title, text)
+        notif.exec_()
         sys.exit(1)
 
     sys.excepthook = exception_hook
     
     app = QtGui.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+    logger = setLogger(name='main')
+    # let only one instance of program running
+    # this version
+    single = singleton.SingleInstance()
+    # other versions
+    detectOtherVersions()
+    sys._excepthook = sys.excepthook
+
+    sys.excepthook = exceptionHook
+
     logger.debug("New session started")
     window = MainWindow()
     window.show()
