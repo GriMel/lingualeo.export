@@ -1,7 +1,7 @@
 import argparse
 import os
 import shutil
-
+import json
 
 def compile_script(folderName):
     icon = os.path.join("src", "pics", "lingualeo.ico")
@@ -35,6 +35,15 @@ def copytree(src, dst):
             continue
     print("Copied src folder")
 
+def change_json(version):
+
+    data_file = os.path.join("src", "data", "data.json")
+    with open(data_file) as f:
+        data_info = json.loads(f.read())
+    data_info['version'] = version
+    with open(data_file, "w+") as f:
+        f.write(json.dumps(data_info))
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -49,9 +58,8 @@ def main():
         return
 
     compile_script(name)
-
+    change_json(version)
     copytree("src", name)
-
     shutil.make_archive(name, "zip", name)
 
 if __name__ == "__main__":
