@@ -601,6 +601,8 @@ class MainWindow(QtGui.QMainWindow):
             Repair was successful.<br>
             Some words are lost.<br>
             New base saved as <b>{}</b>
+            Rename back to <b>vocab.db</b><br>
+            and copy to Kindle.
             """.format(new_name))
         notif = NotificationDialog(title="Repair", text=text)
         notif.exec_()
@@ -724,10 +726,12 @@ class MainWindow(QtGui.QMainWindow):
             with conn:
                 conn.execute("DELETE FROM WORDS;")
                 conn.execute("DELETE FROM LOOKUPS;")
-                conn.execute("UPDATE METADATA SET sscnt = 0\
-                                WHERE id in ('WORDS', 'LOOKUPS');")
-                conn.execute("VACUUM;")
-                conn.commit()
+               #@FROZEN - for future tests 
+               '''
+               conn.execute("UPDATE METADATA SET sscnt = 0\
+                WHERE id in ('WORDS', 'LOOKUPS');")
+               conn.execute("VACUUM;")
+               '''
             self.status_bar.showMessage(self.tr("Kindle database is empty"))
             self.logger.debug("Truncate success - {0}".format(self.file_name))
         else:

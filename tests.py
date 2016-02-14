@@ -231,12 +231,9 @@ class TestMainWindow(unittest.TestCase):
         """
         Test if russian translation is loaded
         """
-        self.ui.language = 'ru'
-        self.ui.loadTranslation()
+        lang_item = self.ui.language_menu.actions()[1]
+        lang_item.trigger()
         self.assertEqual(self.ui.export_button.text(), "Экспорт")
 
-#uncomment to run with unittest
-'''
 if __name__ == "__main__":
     unittest.main()
-'''
