@@ -61,10 +61,23 @@ class WinDialog(QtGui.QDialog):
         windowFlags |= QtCore.Qt.WindowMinimizeButtonHint
         self.setWindowFlags(windowFlags)
 
+class WinFullDialog(QtGui.QDialog):
+
+    def __init__(self):
+        super(WinFullDialog, self).__init__()
+        windowFlags = self.windowFlags()
+        windowFlags |= QtCore.Qt.WindowMaximizeButtonHint
+        windowFlags |= QtCore.Qt.WindowMinMaxButtonsHint
+        windowFlags &= ~QtCore.Qt.WindowContextHelpButtonHint
+        windowFlags |= QtCore.Qt.WindowMinimizeButtonHint
+        self.setWindowFlags(windowFlags)
+
 if os.name == 'nt':
     CustomDialog = WinDialog
+    CustomFullDialog = WinFullDialog
 else:
     CustomDialog = QtGui.QDialog
+    CustomFullDialog = QtGui.QDialog
 
 
 class AboutDialog(CustomDialog):
@@ -726,12 +739,12 @@ class MainWindow(QtGui.QMainWindow):
             with conn:
                 conn.execute("DELETE FROM WORDS;")
                 conn.execute("DELETE FROM LOOKUPS;")
-               #@FROZEN - for future tests 
-               '''
-               conn.execute("UPDATE METADATA SET sscnt = 0\
-                WHERE id in ('WORDS', 'LOOKUPS');")
-               conn.execute("VACUUM;")
-               '''
+                #@FROZEN - for future tests
+                '''
+                conn.execute("UPDATE METADATA SET sscnt = 0\
+                    WHERE id in ('WORDS', 'LOOKUPS');")
+                conn.execute("VACUUM;")
+                '''
             self.status_bar.showMessage(self.tr("Kindle database is empty"))
             self.logger.debug("Truncate success - {0}".format(self.file_name))
         else:
@@ -1099,7 +1112,7 @@ class ExportDialog(CustomDialog, Results):
             self.finish()
 
 
-class StatisticsWindow(CustomDialog, Results):
+class StatisticsWindow(CustomFullDialog, Results):
 
     ICON_FILE = os.path.join("src", "pics", "statistics.ico")
 
