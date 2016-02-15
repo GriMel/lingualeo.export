@@ -41,7 +41,7 @@ class Lingualeo(object):
         if not self.isPremium():
             self.meatballs = content['meatballs']
         else:
-            self.meatballs = "Unlimited"
+            self.meatballs = "∞"
         self.fname = content['fullname']
         self.avatar = requests.get(content['avatar_mini']).content
         self.lvl = content['xp_level']
