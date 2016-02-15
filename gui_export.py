@@ -288,6 +288,7 @@ class MainWindow(QtGui.QMainWindow):
         self.email_edit.setObjectName('email')
         self.pass_label = QtGui.QLabel()
         self.pass_edit = QtGui.QLineEdit()
+        self.pass_edit.setEchoMode(QtGui.QLineEdit.PasswordEchoOnEdit)
         self.pass_edit.setObjectName('pass')
         self.auth_layout.addWidget(self.email_label, 0, 0, 1, 1)
         self.auth_layout.addWidget(self.email_edit, 0, 1, 1, 1)
@@ -766,6 +767,9 @@ class MainWindow(QtGui.QMainWindow):
             self.kindle_path.setText(name)
         else:
             self.text_path.setText(name)
+        if not self.repair_button.isHidden():
+            self.repair_button.hide()
+        self.clearMessage()
         self.logger.debug("Selected {0} file".format(name))
 
     def showAbout(self):
