@@ -231,6 +231,11 @@ class MainWindow(QtGui.QMainWindow):
     """main window"""
     ICON_FILE = os.path.join("src", "pics", "lingualeo.ico")
     SRC = os.path.join("src", "src.ini")
+    VOCAB_PATH = os.path.join("Kindle",
+                              "system",
+                              "vocabulary",
+                              "vocab.db"
+                              )
 
     def __init__(self, source='input'):
         super(MainWindow, self).__init__()
@@ -391,8 +396,9 @@ class MainWindow(QtGui.QMainWindow):
 
         self.kindle_radio.setText(self.tr("Kindle"))
         self.kindle_radio.setStyleSheet("font-weight:bold")
+
         self.kindle_hint.setText(self.tr(
-            "Base is here:<br>Kindle/system/vocabulary/vocab.db"))
+            "Base is here:<br>{}".format(self.VOCAB_PATH)))
         self.all_words_radio.setText(self.tr("All words (recommended)"))
         self.new_words_radio.setText(self.tr("Only new"))
         self.new_words_radio.setToolTip(self.tr("Words, marked for learning"))
@@ -723,12 +729,14 @@ class MainWindow(QtGui.QMainWindow):
             return
         
         # Show warning dialog
+        '''
+        @FROZEN - needs testing
         title = self.tr("Warning")
         text = self.tr("Before truncating turn Wi-Fi on your Kindle off.")
         warning = NotificationDialog(title=title,
                                      text=text)
         warning.exec_()
-
+        '''
         # Show additional prompt
         reply = QtGui.QMessageBox.question(
                     self, 'Message', 'Are you sure to truncate?',
@@ -739,11 +747,11 @@ class MainWindow(QtGui.QMainWindow):
             with conn:
                 conn.execute("DELETE FROM WORDS;")
                 conn.execute("DELETE FROM LOOKUPS;")
+                conn.execute("VACUUM;")
                 #@FROZEN - for future tests
                 '''
                 conn.execute("UPDATE METADATA SET sscnt = 0\
                     WHERE id in ('WORDS', 'LOOKUPS');")
-                conn.execute("VACUUM;")
                 '''
             self.status_bar.showMessage(self.tr("Kindle database is empty"))
             self.logger.debug("Truncate success - {0}".format(self.file_name))
