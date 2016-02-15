@@ -1,4 +1,7 @@
 Kindleo
 ================
-[EN!](README.md)[RU!](README_RU.md)}
-A GUI version of original lingualeo.export
+[Russian](README_RU.md)<br>
+GUI version of original lingualeo.export
+
+
+
