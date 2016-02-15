@@ -16,4 +16,5 @@ dbs/
 src/log.out
 *.sublime-settings
 *.json
+!/src/data/data.json
 sandbox/
