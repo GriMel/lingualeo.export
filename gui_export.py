@@ -380,7 +380,7 @@ class MainWindow(QtGui.QMainWindow):
         self.createMenuBar()
 
     def retranslateUI(self):
-        self.setWindowTitle(self.tr("Export to Lingualeo"))
+        self.setWindowTitle(self.tr("Kindleo"))
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.email_label.setText("e-mail")
         self.pass_label.setText("password")
