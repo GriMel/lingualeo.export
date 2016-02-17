@@ -22,15 +22,28 @@ class Lingualeo(object):
     def __init__(self, email, password):
         self.email = email
         self.password = password
-        self.initUser()
-
-    def initUser(self):
+        self.auth_info = None
         self.cookies = None
         self.premium = None
         self.meatballs = None
         self.avatar = None
         self.fname = None
         self.lvl = None
+
+    def initUser(self):
+        
+        self.premium = self.auth_info['premium_type']
+        self.fname = self.auth_info['fullname']
+        self.lvl = self.auth_info['xp_level']
+        if not self.premium:
+            self.meatballs = self.auth_info['meatballs']
+        else:
+            self.meatballs = "∞"
+        try:
+            self.avatar = requests.get(self.auth_info['avatar_mini'],
+                                       timeout=self.TIMEOUT).content
+        except:
+            self.avatar = None
 
     def auth(self):
         """authorization on lingualeo.com"""
@@ -41,15 +54,7 @@ class Lingualeo(object):
         }
         r = requests.get(url, values, timeout=self.TIMEOUT)
         self.cookies = r.cookies
-        content = r.json()['user']
-        self.premium = bool(content['premium_type'])
-        if not self.isPremium():
-            self.meatballs = content['meatballs']
-        else:
-            self.meatballs = "∞"
-        self.fname = content['fullname']
-        self.avatar = requests.get(content['avatar_mini']).content
-        self.lvl = content['xp_level']
+        self.auth_info = r.json()['user']
 
     def get_translate(self, word):
         """get translation from lingualeo's API"""

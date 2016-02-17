@@ -477,6 +477,7 @@ class MainWindow(QtGui.QMainWindow):
                 "Lingualeo: WRONG - no meatballs")
             return False
         self.logger.debug("Lingualeo is OK")
+        self.lingualeo.initUser()
         return True
 
     def inputOk(self):
