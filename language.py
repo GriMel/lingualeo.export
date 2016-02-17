@@ -1,4 +1,17 @@
 # !/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+===Description===
+Module for creating language files (ts and qm)
+for PyQt Linguist
+
+===Usage===
+Extract ts (Ukrainian [ua] language):
+    python language.py ts ua
+
+Convert ts to qm
+    python language.py qm ua
+"""
 import argparse
 import os
 

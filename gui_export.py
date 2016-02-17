@@ -1,8 +1,12 @@
 # !/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
-Usage: python gui_export.py
+===Description===
+GUI version of lingualeo.export
 
-===GUI version of lingualeo.export===
+===Usage===
+python gui_export.py
+
 """
 
 import sys

@@ -1,4 +1,9 @@
 # !/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Module for configuring logger
+"""
+
 import logging
 from os.path import join
 

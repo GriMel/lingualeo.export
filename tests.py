@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+===Description===
+Module for tests
+"""
+
 import unittest
 import logging
 import sys

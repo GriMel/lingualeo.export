@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+===Description===
+Module for configuring Lingualeo API
+"""
+
 import requests
 from operator import itemgetter
 from collections import Counter

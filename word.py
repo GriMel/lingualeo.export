@@ -1,3 +1,15 @@
+# !/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+===Description===
+Module for configuring handlers.
+Every handler converts its input to self.data
+
+Kindle - from Kindle db.
+Text - from txt file.
+Input - from manual input
+"""
+
 import sqlite3
 
 

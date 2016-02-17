@@ -1,3 +1,16 @@
+# !/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+===Description===
+Module for compiling by pyinstaller to
+executable file (Linux or Windows)
+
+===Usage===
+python compile.py <version>
+
+for version 1.0.1:
+    python compile.py 1.0.1
+"""
 import argparse
 import os
 import shutil
