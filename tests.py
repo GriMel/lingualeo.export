@@ -13,7 +13,7 @@ import json
 import sqlite3
 from PyQt4.QtTest import QTest
 from PyQt4 import QtGui, QtCore
-from gui_export import MainWindow
+from gui_export import MainWindow, ExportDialog
 from word import *
 from service import *
 from time import sleep
@@ -56,6 +56,15 @@ def createSqlBase(malformed=False, empty=False, valid=True):
             f.write(b'tt')
 
 
+def createLingualeoUser():
+    """return test Lingualeo user"""
+    return {"premium_type": 1,
+            "fullname": "Bob Gubko",
+            "meatballs": 1500,
+            "avatar_mini": 'https://d144fqpiyasmrr'
+                           '.cloudfront.net/uploads'
+                           '/avatar/0s100.png',
+            "xp_level": 34}
 
 
 class TestMainWindow(unittest.TestCase):
@@ -241,6 +250,24 @@ class TestMainWindow(unittest.TestCase):
         lang_item = self.ui.language_menu.actions()[1]
         lang_item.trigger()
         self.assertEqual(self.ui.export_button.text(), "Экспорт")
+
+    def test_export_premium(self):
+        """
+        test for unlimited sign if user is premium
+        """
+        createSqlBase()
+        handler = Kindle(TEST_DB)
+        array = handler.get()
+        duplicates = 0
+        total = len(array)
+        auth_info = createLingualeoUser()
+        lingualeo = Lingualeo("aaa@mail.com", "12345")
+        lingualeo.auth_info = auth_info
+        lingualeo.initUser()
+        dialog = ExportDialog(array, total, duplicates, lingualeo)
+        self.assertEqual("∞", dialog.meatballs_value_label.text())
+
+
 
 if __name__ == "__main__":
     unittest.main()
