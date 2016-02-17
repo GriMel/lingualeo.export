@@ -1,7 +1,11 @@
 Kindleo
 ================
 GUI version of original lingualeo.export<br>
-[![Download Kindleo](https://a.fsdn.com/con/app/sf-download-button)](http://sourceforge.net/projects/kindleo/files/latest/download/)
+[![Download Kindleo](https://a.fsdn.com/con/app/sf-download-button)](http://sourceforge.net/projects/kindleo/files/latest/download/)<br>
+<center>or</center>
+```
+python gui_export.py
+```
 * [Details](README_EN.md)<br>
 * [Детали](README_RU.md)<br>
 * [To contribute](CONTRIBUTE.md)<br>
