@@ -14,7 +14,7 @@ Kindleo*
 makefile
 dbs/
 src/log.out
-*.sublime-settings
+*.sublime*
 *.json
 !/src/data/data.json
 sandbox/
