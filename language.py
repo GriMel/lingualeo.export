@@ -17,6 +17,10 @@ import os
 
 
 def createTs(language):
+    """
+    Create ts for editing translation.
+    Give source .py file, language and create the corresponding ts.
+    """
     src_file = "gui_export.py"
     lang_file = "qt_{}.ts".format(language)
     command = "pylupdate4 -verbose -noobsolete "\
@@ -26,6 +30,10 @@ def createTs(language):
 
 
 def createQm(language):
+    """
+    Create qm file from ts.
+    Give ts file and create the corresponding qm.
+    """
     ts_file = "qt_{}.ts".format(language)
     qm_file = "src/lang/qt_{}.qm".format(language)
     command = "lrelease-qt4 -verbose {0} "\
@@ -35,6 +43,7 @@ def createQm(language):
 
 
 def main():
+    # parser of commandline arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("kind")
     parser.add_argument("language")

@@ -14,6 +14,9 @@ import sqlite3
 
 
 class Base(object):
+    """
+    Base class for all handlers.
+    """
     data = []
     context = []
 
@@ -29,7 +32,16 @@ class Base(object):
 
 
 class Kindle(Base):
+    """
+    Handler of Kindle's database
+    """
+
     def read(self, only_new_words=False):
+        """
+        Reading data from database.
+        All words - category = 100.
+        New words - category = 0.
+        """
         conn = sqlite3.connect(self.source)
         command = None
         if only_new_words:
@@ -51,12 +63,27 @@ class Kindle(Base):
 
 
 class Text(Base):
+    """
+    Class for getting words from txt file.
+    """
+
     def read(self):
+        """
+        Proceed every line of file.
+        One line - one word.
+        """
         with open(self.source, "r") as f:
             for line in f:
                 self.data.append({'word': line})
 
 
 class Input(Base):
+    """
+    Class for getting word from input.
+    """
+
     def read(self):
+        """
+        Given word = array.
+        """
         self.data = self.source

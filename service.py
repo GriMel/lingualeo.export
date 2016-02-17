@@ -12,7 +12,6 @@ from collections import Counter
 
 class Lingualeo(object):
     """Lingualeo.com API class"""
-
     TIMEOUT = 5
     LOGIN = "http://api.lingualeo.com/api/login"
     ADD_WORD = "http://api.lingualeo.com/addword"
@@ -20,6 +19,11 @@ class Lingualeo(object):
     GET_TRANSLATE = "http://api.lingualeo.com/gettranslates?word="
 
     def __init__(self, email, password):
+        """
+        Initializing API.
+        Given email and password.
+        All info about user - None.
+        """
         self.email = email
         self.password = password
         self.auth_info = None
@@ -31,7 +35,10 @@ class Lingualeo(object):
         self.lvl = None
 
     def initUser(self):
-        
+        """
+        Retrieve information about user
+        from server's response.
+        """
         self.premium = self.auth_info['premium_type']
         self.fname = self.auth_info['fullname']
         self.lvl = self.auth_info['xp_level']
@@ -46,7 +53,9 @@ class Lingualeo(object):
             self.avatar = None
 
     def auth(self):
-        """authorization on lingualeo.com"""
+        """
+        Authorization on lingualeo.com with given email/pass.
+        """
         url = self.LOGIN
         values = {
             "email": self.email,
@@ -57,7 +66,9 @@ class Lingualeo(object):
         self.auth_info = r.json()['user']
 
     def get_translate(self, word):
-        """get translation from lingualeo's API"""
+        """
+        Get translation from lingualeo's API
+        """
         url = self.GET_TRANSLATE + word
         try:
             response = requests.get(url,
@@ -85,7 +96,9 @@ class Lingualeo(object):
                     "tword": ""}
 
     def add_word(self, word, tword, context=""):
-        """add new word"""
+        """
+        Add new word to Lingualeo vocabulary
+        """
         url = self.ADD_WORD
         values = {
             "word": word,
@@ -98,7 +111,9 @@ class Lingualeo(object):
                              timeout=self.TIMEOUT)
 
     def add_word_multiple(self, array):
-        """add the array of words"""
+        """
+        Add the array of words to Lingualeo vocabulary.
+        """
         url = self.ADD_WORD_MULTI
         data = dict()
         for index, i in enumerate(array):
@@ -111,15 +126,21 @@ class Lingualeo(object):
                              cookies=self.cookies)
 
     def isPremium(self):
-        """tells if user has a premium status"""
+        """
+        Tells if user has a premium status
+        """
         return self.premium
 
     def substractMeatballs(self):
-        """method for substracting meatballs"""
+        """
+        Method for substracting meatballs
+        """
         self.meatballs -= 1
 
     def isEnoughMeatballs(self, words):
-        """check if meatballs > words"""
+        """
+        Check if meatballs > words
+        """
         if not self.isPremium() and self.meatballs < words:
             return False
         else:

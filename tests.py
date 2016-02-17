@@ -7,7 +7,6 @@ Module for tests
 
 import unittest
 import logging
-import sys
 import os
 import json
 import sqlite3
@@ -16,24 +15,29 @@ from PyQt4 import QtGui, QtCore
 from gui_export import MainWindow, ExportDialog
 from word import *
 from service import *
-from time import sleep
 
 TEST_DB = 'test.db'
 TEST_TXT = 'test.txt'
+
+
 def leftMouseClick(widget):
     QTest.mouseClick(widget, QtCore.Qt.LeftButton)
+
 
 def createTxtFile():
     with open(TEST_TXT, 'w') as f:
         f.write('bacon')
         f.write('simple')
 
+
 def createSqlBase(malformed=False, empty=False, valid=True):
-    
+    """
+    create test SQL base with name test.db
+    """
     conn = sqlite3.connect('test.db')
     if valid:
         conn.execute("""
-            CREATE TABLE WORDS 
+            CREATE TABLE WORDS
             (id TEXT PRIMARY KEY NOT NULL,
                 word TEXT, stem TEXT, lang TEXT,
                 category INTEGER DEFAULT 0,
@@ -68,7 +72,7 @@ def createLingualeoUser():
 
 
 class TestMainWindow(unittest.TestCase):
-    
+
     def setUp(self):
         """
         Turn off logger

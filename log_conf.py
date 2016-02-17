@@ -11,7 +11,11 @@ from os.path import join
 def setLogger(level=logging.DEBUG,
               name="my_logger",
               file=join("src", "log.out")):
-    DEBUG = True
+    """
+    Default logger for all classes/modules
+    If not DEBUG - don't show to console anything.
+    """
+    DEBUG = False
 
     logger = logging.getLogger(name)
     logger.setLevel(level)

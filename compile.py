@@ -16,7 +16,12 @@ import os
 import shutil
 import json
 
+
 def compile_script(folderName):
+    """
+    Main script.
+    Sets folder, icon and runs pyinstaller
+    """
     icon = os.path.join("src", "pics", "lingualeo.ico")
     name = "Kindleo"
     scriptName = "gui_export.py"
@@ -30,7 +35,9 @@ def compile_script(folderName):
 
 
 def copytree(src, dst):
-    """copying files"""
+    """
+    Copy folder/file.
+    """
     if os.name == 'nt':
         ignored_folders = ['sqlite_lin']
     elif os.name == 'posix':
@@ -39,7 +46,7 @@ def copytree(src, dst):
         s = os.path.join(src, item)
         d = os.path.join(dst, src, item)
         if os.path.isdir(s):
-            if any(w in s for w in  ignored_folders):
+            if any(w in s for w in ignored_folders):
                 continue
             else:
                 shutil.copytree(s, d)
@@ -48,8 +55,11 @@ def copytree(src, dst):
             continue
     print("Copied src folder")
 
-def change_json(version):
 
+def change_json(version):
+    """
+    Change version's field in json file.
+    """
     data_file = os.path.join("src", "data", "data.json")
     with open(data_file) as f:
         data_info = json.loads(f.read())
