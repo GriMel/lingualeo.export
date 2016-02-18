@@ -6,6 +6,7 @@ Module for configuring Lingualeo API
 """
 
 import requests
+from requests.exceptions import ConnectionError as NoConnection, Timeout
 from operator import itemgetter
 from collections import Counter
 
@@ -49,7 +50,7 @@ class Lingualeo(object):
         try:
             self.avatar = requests.get(self.auth_info['avatar_mini'],
                                        timeout=self.TIMEOUT).content
-        except:
+        except (NoConnection, Timeout):
             self.avatar = None
 
     def auth(self):
@@ -117,9 +118,9 @@ class Lingualeo(object):
         url = self.ADD_WORD_MULTI
         data = dict()
         for index, i in enumerate(array):
-            data["words["+index+"][word]"] = array['word']
-            data["words["+index+"][tword]"] = array['tword']
-            data["words["+index+"][context]"] = array['context']
+            data["words["+index+"][word]"] = i['word']
+            data["words["+index+"][tword]"] = i['tword']
+            data["words["+index+"][context]"] = i['context']
 
         return requests.post(url,
                              data,
