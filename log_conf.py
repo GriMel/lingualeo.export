@@ -10,7 +10,7 @@ from os.path import join
 
 def setLogger(level=logging.DEBUG,
               name="my_logger",
-              file_path=join("src", "log.out")):
+              log_file=join("src", "log.out")):
     """
     Default logger for all classes/modules
     If not DEBUG - don't show to console anything.
@@ -26,7 +26,7 @@ def setLogger(level=logging.DEBUG,
     formatter = logging.Formatter('%(message)s')
     ch.setFormatter(formatter)
 
-    fh = logging.FileHandler(file)
+    fh = logging.FileHandler(log_file)
     fh.setLevel(level)
     formatter = logging.Formatter(
         '%(asctime)s :: %(name)s - %(message)s',

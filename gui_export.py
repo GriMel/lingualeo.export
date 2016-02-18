@@ -372,14 +372,10 @@ class MainWindow(QtGui.QMainWindow):
         self.menu_bar.addAction(self.help_menu.menuAction())
         self.setMenuBar(self.menu_bar)
 
-    def initUI(self):
+    def createAuthBlock(self):
         """
-        Construct GUI gor MainWindow
+        Construct block for email/password 
         """
-        self.main_widget = QtGui.QWidget(self)
-        self.main_layout = QtGui.QVBoxLayout()
-
-        self.auth_layout = QtGui.QGridLayout()
         self.auth_label = QtGui.QLabel()
         self.email_label = QtGui.QLabel()
         self.email_edit = QtGui.QLineEdit()
@@ -388,14 +384,19 @@ class MainWindow(QtGui.QMainWindow):
         self.pass_edit = QtGui.QLineEdit()
         self.pass_edit.setEchoMode(QtGui.QLineEdit.PasswordEchoOnEdit)
         self.pass_edit.setObjectName('pass')
-        self.auth_layout.addWidget(self.email_label, 0, 0, 1, 1)
-        self.auth_layout.addWidget(self.email_edit, 0, 1, 1, 1)
-        self.auth_layout.addWidget(self.pass_label, 1, 0, 1, 1)
-        self.auth_layout.addWidget(self.pass_edit, 1, 1, 1, 1)
 
-        self.main_label = QtGui.QLabel()
-        self.main_label.setAlignment(QtCore.Qt.AlignCenter)
+        auth_layout = QtGui.QGridLayout()
+        auth_layout.addWidget(self.email_label, 0, 0, 1, 1)
+        auth_layout.addWidget(self.email_edit, 0, 1, 1, 1)
+        auth_layout.addWidget(self.pass_label, 1, 0, 1, 1)
+        auth_layout.addWidget(self.pass_edit, 1, 1, 1, 1)
 
+        return auth_layout
+
+    def createInputBlock(self):
+        """
+        Init block for Input
+        """        
         self.input_radio = QtGui.QRadioButton()
         self.input_radio.setObjectName("input")
         self.input_radio.setChecked(True)
@@ -403,11 +404,19 @@ class MainWindow(QtGui.QMainWindow):
         self.input_context_label = QtGui.QLabel()
         self.input_word_edit = QtGui.QLineEdit()
         self.input_context_edit = QtGui.QLineEdit()
-        self.input_layout = QtGui.QGridLayout()
-        self.input_layout.addWidget(self.input_word_label, 0, 0, 1, 1)
-        self.input_layout.addWidget(self.input_word_edit, 0, 1, 1, 1)
-        self.input_layout.addWidget(self.input_context_label, 1, 0, 1, 1)
-        self.input_layout.addWidget(self.input_context_edit, 1, 1, 1, 1)
+
+        input_layout = QtGui.QGridLayout()
+        input_layout.addWidget(self.input_word_label, 0, 0, 1, 1)
+        input_layout.addWidget(self.input_word_edit, 0, 1, 1, 1)
+        input_layout.addWidget(self.input_context_label, 1, 0, 1, 1)
+        input_layout.addWidget(self.input_context_edit, 1, 1, 1, 1)
+
+        return input_layout
+
+    def createTextBlock(self):
+        """
+        Construct block for Text
+        """
         self.text_radio = QtGui.QRadioButton()
         self.text_radio.setObjectName("text")
         self.text_button = QtGui.QPushButton()
@@ -417,6 +426,10 @@ class MainWindow(QtGui.QMainWindow):
         self.text_layout.addWidget(self.text_button)
         self.text_layout.addWidget(self.text_path)
 
+    def createKindleBlock(self):
+        """
+        Construct block for Kindle
+        """
         self.kindle_radio = QtGui.QRadioButton()
         self.kindle_radio.setObjectName("kindle")
         self.kindle_hint = QtGui.QLabel()
@@ -430,11 +443,28 @@ class MainWindow(QtGui.QMainWindow):
         self.words_radio_group = QtGui.QButtonGroup()
         self.words_radio_group.addButton(self.all_words_radio)
         self.words_radio_group.addButton(self.new_words_radio)
-        self.kindle_layout = QtGui.QGridLayout()
-        self.kindle_layout.addWidget(self.kindle_button, 0, 0)
-        self.kindle_layout.addWidget(self.kindle_path, 0, 1)
-        self.kindle_layout.addWidget(self.all_words_radio, 1, 0, 1, 0)
-        self.kindle_layout.addWidget(self.new_words_radio, 2, 0, 1, 0)
+        kindle_layout = QtGui.QGridLayout()
+        kindle_layout.addWidget(self.kindle_button, 0, 0)
+        kindle_layout.addWidget(self.kindle_path, 0, 1)
+        kindle_layout.addWidget(self.all_words_radio, 1, 0, 1, 0)
+        kindle_layout.addWidget(self.new_words_radio, 2, 0, 1, 0)
+
+        return kindle_layout
+
+    def initUI(self):
+        """
+        Construct GUI gor MainWindow
+        """
+        self.main_widget = QtGui.QWidget(self)
+        self.main_layout = QtGui.QVBoxLayout()
+
+        self.auth_layout = self.createAuthBlock()
+        self.main_label = QtGui.QLabel()
+        self.main_label.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.input_layout = self.createInputBlock()
+        self.text_layout = self.createTextBlock()
+        self.kindle_layout = self.createKindleBlock()
 
         self.export_button = QtGui.QPushButton()
         self.kindle_truncate_button = QtGui.QPushButton()
@@ -764,14 +794,12 @@ class MainWindow(QtGui.QMainWindow):
         Preparing and exporting words
         """
         self.logger.debug("Starting export")
-        kindle = self.kindle_radio.isChecked()
-        input_word = self.input_radio.isChecked()
-        text = self.text_radio.isChecked()
         email = self.email_edit.text().strip(" ")
         password = self.pass_edit.text().strip(" ")
         self.lingualeo = Lingualeo(email, password)
 
-        if input_word:
+        # Input selected
+        if self.input_radio.isChecked():
             if not self.inputOk():
                 self.logger.debug("Export refused - Input")
                 return
@@ -781,7 +809,9 @@ class MainWindow(QtGui.QMainWindow):
             self.array = [{'word': word, 'context': context}]
             before = 1
             self.logger.debug("Export Input - Ready!")
-        elif text:
+
+        # Text selected
+        elif self.text_radio.isChecked():
             self.file_name = self.text_path.text()
             if not self.textOk():
                 self.logger.debug("Export refused - Text")
@@ -794,7 +824,8 @@ class MainWindow(QtGui.QMainWindow):
             before = len(self.array)
             self.logger.debug("Export Text - Ready!")
 
-        elif kindle:
+        # Kindle selected
+        elif self.kindle_radio.isChecked():
             self.file_name = self.kindle_path.text()
             if not self.kindleOk():
                 self.logger.debug("Export refused - Kindle")
