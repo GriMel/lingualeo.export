@@ -1645,7 +1645,7 @@ def main():
     # let only one instance of program running
     # this version
     # pylint: disable=W0612
-    single = singleton.SingleInstance()
+    single = singleton.SingleInstance()  # noqa
     # pylint: enable=W0612
     # other versions
     detectOtherVersions()
