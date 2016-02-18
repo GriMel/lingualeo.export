@@ -13,8 +13,8 @@ import sqlite3
 from PyQt4.QtTest import QTest
 from PyQt4 import QtGui, QtCore
 from gui_export import MainWindow, ExportDialog
-from word import *
-from service import *
+from word import Kindle
+from service import Lingualeo
 
 TEST_DB = 'test.db'
 TEST_TXT = 'test.txt'

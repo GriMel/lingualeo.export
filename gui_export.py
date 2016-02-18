@@ -1,5 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
+# pylint: disable=E1002
 """
 ===Description===
 GUI version of lingualeo.export
@@ -175,7 +176,8 @@ class AboutDialog(CustomDialog):
             self.tr("<a href='mailto:{0}'>Send E-mail</a>".format(email)))
         self.ok_button.setText(self.tr("OK"))
 
-    def openEmail(self, link):
+    @staticmethod
+    def openEmail(link):
         """
         Write an e-mail to developer.
         """
@@ -317,7 +319,7 @@ class MainWindow(QtGui.QMainWindow):
                            "sqlite3.exe")
         }
 
-    def __init__(self, source='input'):
+    def __init__(self):
         """
         Initializing MainWindow.
         -default language - English.
@@ -452,7 +454,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # Create 4 separators for next usage
         h_lines = []
-        for i in range(4):
+        for _ in range(4):
             h = createSeparator()
             h_lines.append(h)
 
@@ -898,7 +900,8 @@ class MainWindow(QtGui.QMainWindow):
         self.clearMessage()
         self.logger.debug("Selected {0} file".format(name))
 
-    def showAbout(self):
+    @staticmethod
+    def showAbout():
         """
         Show dialog 'About'
         """
@@ -1261,6 +1264,9 @@ class ExportDialog(CustomDialog, Results):
         self.task.punched.connect(self.onProgress)
 
     def keyPressEvent(self, event):
+        """
+        Exit by Esc pressed.
+        """
         if event.key() == QtCore.Qt.Key_Escape:
             self.task.stop()
             self.close()
@@ -1317,11 +1323,11 @@ class ExportDialog(CustomDialog, Results):
         """
         if data['sent']:
             row = data['row']
-            if row['result'] == self.RESULTS['ad']:
-                if not self.lingualeo.isPremium():
-                    self.lingualeo.substractMeatballs()
-                    self.meatballs_value_label.setText(
-                        str(self.lingualeo.meatballs))
+            if (row['result'] == self.RESULTS['ad'] and
+                    not self.lingualeo.isPremium()):
+                        self.lingualeo.substractMeatballs()
+                        self.meatballs_value_label.setText(
+                            str(self.lingualeo.meatballs))
         else:
             self.start_button.click()
             warning = NotificationDialog(self.tr("Internet error"),
