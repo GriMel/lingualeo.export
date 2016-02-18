@@ -1,6 +1,8 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 # pylint: disable=E1002, W0212
+# E1002 - to avoid PyQt errors about old-style class
+# W0212 - to avoid error on sys._excepthook
 """
 ===Description===
 GUI version of lingualeo.export
@@ -637,7 +639,7 @@ class MainWindow(QtGui.QMainWindow):
         # no path
         if not path:
             self.status_bar.showMessage(self.tr("No Kindle database"))
-            self.logger.debug("% - no path", path)
+            self.logger.debug("%s - no path", path)
             return False
 
         # not valid database
@@ -645,7 +647,7 @@ class MainWindow(QtGui.QMainWindow):
         if ext != '.db':
             self.status_bar.showMessage(
                 self.tr("Not database"))
-            self.logger.debug("% - not '.db'", path)
+            self.logger.debug("%s - not '.db'", path)
             return False
 
         # check database
@@ -986,7 +988,7 @@ class MainWindow(QtGui.QMainWindow):
         event.ignore()
 
 
-class Results:
+class Results(object):
     """
     Helper class for storing constants.
     """
@@ -1539,7 +1541,7 @@ class ExceptionDialog(QtGui.QDialog):
             icon = QtGui.QIcon.fromTheme("go-down")
             self.show_hide_button.setText(self.tr("Show details..."))
             self.more_edit.hide()
-            for i in range(0, 10):
+            for _ in range(0, 10):
                 QtGui.QApplication.processEvents()
             self.resize(self.minimumSizeHint())
         self.show_hide_button.setIcon(icon)

@@ -10,7 +10,7 @@ from os.path import join
 
 def setLogger(level=logging.DEBUG,
               name="my_logger",
-              file=join("src", "log.out")):
+              file_path=join("src", "log.out")):
     """
     Default logger for all classes/modules
     If not DEBUG - don't show to console anything.
