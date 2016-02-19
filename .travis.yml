@@ -1,1 +1,3 @@
 language: python
+install: "pip install -r requirements.txt"
+script: nosetests --exe --with-coverage --cover-erase --cover-html
