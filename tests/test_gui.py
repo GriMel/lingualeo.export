@@ -3,6 +3,9 @@
 """
 ===Description===
 Module for tests
+
+Recommended to run with nosetests as:
+nosetests --exe --with-coverage --cover-erase --cover-html
 """
 
 import unittest
@@ -15,7 +18,7 @@ from PyQt4 import QtGui, QtCore
 from gui_export import MainWindow, ExportDialog, StatisticsDialog,\
                        AboutDialog, NotificationDialog, ExceptionDialog,\
                        Results
-from word import Kindle
+from handler import Kindle
 from service import Lingualeo
 
 TEST_DB = 'test.db'
