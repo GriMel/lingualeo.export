@@ -181,6 +181,8 @@ class TestMainWindow(BaseTest):
         """
         Nothing is selected - ExportDialog shouldn't be constructed.
         """
+        self.ui.email_edit.setText("")
+        self.ui.pass_edit.setText("")
         leftMouseClick(self.ui.export_button)
         with self.assertRaises(AttributeError):
             self.ui.dialog
@@ -255,6 +257,12 @@ class TestMainWindow(BaseTest):
         self.assertEqual(self.ui.status_bar.currentMessage(),
                          "Database is malformed. Click 'Repair'")
 
+    def test_run_export(self):
+        """
+        Email/password set, set word in 'Input' - ExportDialog appears
+        """
+
+
     def test_russian_translation(self):
         """
         Selecting RU from Language menu - russian translation is loaded
@@ -303,7 +311,7 @@ class TestExportDialog(BaseTest):
         self.assertEqual("∞", dialog.meatballs_value_label.text())
 
 
-class TestStatisticsDialog(unittest.TestCase, Results):
+class TestStatisticsDialog(BaseTest, Results):
     """
     Class for testing StatisticsDialog
     """
