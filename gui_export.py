@@ -26,7 +26,7 @@ from operator import itemgetter
 from subprocess import check_call
 from tendo import singleton
 
-from word import Kindle, Text
+from handler import Kindle, Text
 from service import Lingualeo
 from log_conf import setLogger
 
@@ -1084,12 +1084,10 @@ class WorkThread(QtCore.QThread, Results):
                        "tword": translate,
                        "context": context}
                 data = {"sent": True,
-                        "row": row,
-                        "index": index+1}
+                        "row": row}
             except (NoConnection, Timeout):
                 data = {"sent": False,
-                        "row": None,
-                        "index": None}
+                        "row": None}
                 self.logger.debug("Couldn't upload words")
             except UnicodeEncodeError:
                 row = {"word": word,
@@ -1097,8 +1095,7 @@ class WorkThread(QtCore.QThread, Results):
                        "tword": '',
                        "context": context}
                 data = {"sent": True,
-                        "row": row,
-                        "index": index+1}
+                        "row": row}
                 self.logger.debug("% is not English", word)
             finally:
                 self.punched.emit(data)
@@ -1411,6 +1408,9 @@ class StatisticsDialog(CustomFullDialog, Results):
         """
         super(StatisticsDialog, self).__init__()
         self.logger = setLogger(name="Statistics")
+        self.colors = []
+        self.texts = []
+        self.values = []
         self.stat = stat
         self.initUI()
         self.retranslateUI()
@@ -1447,9 +1447,9 @@ class StatisticsDialog(CustomFullDialog, Results):
         header = self.table.horizontalHeader()
         header.setStretchLastSection(True)
 
-        grid = self.createGrid()
+        self.grid = self.createGrid()
         self.layout = QtGui.QVBoxLayout()
-        self.layout.addLayout(grid)
+        self.layout.addLayout(self.grid)
         self.layout.addWidget(self.table)
         self.setLayout(self.layout)
 
@@ -1479,15 +1479,22 @@ class StatisticsDialog(CustomFullDialog, Results):
                  "value": not_added,
                  "color": "white"}
                ]
+
         for index, i in enumerate(data):
             color_label = QtGui.QLabel()
             color_label.setStyleSheet(
                 "background-color:{0}".format(i['color']))
             text_label = QtGui.QLabel()
-            text_label.setText("{0}: {1}".format(i['text'], i['value']))
+            value_label = QtGui.QLabel()
+            text_label.setText("{}".format(i['text']))
+            value_label.setText("{}".format(i['value']))
 
+            self.colors.append(color_label)
+            self.texts.append(text_label)
+            self.values.append(value_label)
             grid.addWidget(color_label, index, 0)
             grid.addWidget(text_label, index, 1)
+            grid.addWidget(value_label, index, 2)
 
         return grid
 
