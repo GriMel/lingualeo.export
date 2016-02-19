@@ -100,6 +100,9 @@ class BaseTest(unittest.TestCase):
 
 
 class TestMainWindow(BaseTest):
+    """
+    Class for testing MainWindow
+    """
 
     def setUp(self):
         """
