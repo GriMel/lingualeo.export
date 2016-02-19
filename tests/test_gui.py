@@ -109,21 +109,14 @@ class TestMainWindow(BaseTest):
         Turn off logger
         Set english language
         Set credentials from json file
-        credentials.json structure:
-        {
-            "email":"example@gmail.com",
-            "password":"123456789"
-        }
         """
         super(TestMainWindow, self).setUp()
         logging.disable(logging.CRITICAL)
-        with open('credentials.json') as f:
-            credentials = json.loads(f.read())
         self.ui = MainWindow()
         self.ui.language = 'en'
         self.ui.loadTranslation()
-        self.ui.email_edit.setText(credentials['email'])
-        self.ui.pass_edit.setText(credentials['password'])
+        self.ui.email_edit.setText('b346059@trbvn.com')
+        self.ui.pass_edit.setText('1234567890')
 
     def tearDown(self):
         """
