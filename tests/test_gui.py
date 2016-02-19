@@ -92,6 +92,10 @@ class BaseTest(unittest.TestCase):
         Prevent gtk-Critical messages.
         Remove app
         """
+        self.app.quit()
+        self.app.processEvents()
+        self.app.sendPostedEvents(self.app, 0)
+        self.app.flush()
         self.app.deleteLater()
 
 
