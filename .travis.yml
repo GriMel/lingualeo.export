@@ -11,7 +11,8 @@ before_install:
 #  - sudo chmod a+rw /builds
     - sudo apt-get install -y mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev
     - sudo apt-get install -y python3-sip python3-sip-dev python3-pyqt4 cmake
-#install:
+install:
+    - pip install -r requirements.txt
 #
 #  # Qt4
 #  - pushd /builds
@@ -31,6 +32,5 @@ before_install:
 #  - popd
 #  # Builds Complete
 #  - popd
-  - pip install -r requirements.txt
 #  - cp -r /usr/lib/python3/dist-packages/* /home/travis/virtualenv/python3.5.0/lib/python3.5/site-packages
 script: nosetests --exe --with-coverage --cover-erase --cover-html --cover-package=gui_export.py,service.py,handler.py
