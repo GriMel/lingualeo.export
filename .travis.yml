@@ -1,4 +1,6 @@
 language: python
+python:
+  - "3.5"
 before_install:
     - sudo apt-get install mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev
     - sudo apt-get install python3-sip python3-sip-dev python3-pyqt4 cmake
