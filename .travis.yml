@@ -26,7 +26,7 @@ install:
     # PyQt4
     - tar xzf /downloads/pyqt4.tar.gz --keep-newer-files
     - pushd PyQt-x11-gpl-4.11.3
-    - python configure.py -c --confirm-license --no-designer-plugin -e QtCore -e QtGui
+    - python configure.py -c --confirm-license --no-designer-plugin -e QtCore -e QtGui -e QtTest
     - make
     - sudo make install
     - popd
