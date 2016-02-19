@@ -74,10 +74,10 @@ def main():
     args = parser.parse_args()
     version = args.version
     system = 'win' if os.name == 'nt' else 'lin'
-    name = "Kindleo_{}_{}".format(version, system)
+    name = "Kindleo_{0}_{1}".format(version, system)
     name = os.path.join("releases", name)
     if os.path.exists(name):
-        print("Folder {} already exists".format(name))
+        print("Folder {0} already exists".format(name))
         return
 
     compile_script(name)
