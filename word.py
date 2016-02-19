@@ -42,7 +42,6 @@ class Kindle(Base):
         All words - category = 100.
         New words - category = 0.
         """
-        super(Kindle, self).read()
         conn = sqlite3.connect(self.source)
         command = None
         if only_new_words:
