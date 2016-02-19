@@ -1,3 +1,6 @@
 language: python
+before_install:
+    - sudo apt-get install mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev
+    - sudo apt-get install python3-sip python3-sip-dev python3-pyqt4 cmake
 install: "pip install -r requirements.txt"
 script: nosetests --exe --with-coverage --cover-erase --cover-html
