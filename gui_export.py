@@ -422,9 +422,11 @@ class MainWindow(QtGui.QMainWindow):
         self.text_button = QtGui.QPushButton()
         self.text_path = QtGui.QLineEdit()
         self.text_path.setReadOnly(True)
-        self.text_layout = QtGui.QHBoxLayout()
-        self.text_layout.addWidget(self.text_button)
-        self.text_layout.addWidget(self.text_path)
+        text_layout = QtGui.QHBoxLayout()
+        text_layout.addWidget(self.text_button)
+        text_layout.addWidget(self.text_path)
+
+        return text_layout
 
     def createKindleBlock(self):
         """
