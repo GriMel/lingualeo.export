@@ -403,6 +403,10 @@ class TestAboutDialog(BaseTest):
         self.email = data_info['e-mail']
         self.about = AboutDialog()
 
+    def tearDown(self):
+
+        super(TestAboutDialog, self).tearDown()
+
     def test_version_present(self):
         """
         Data in json == data in 'About'
