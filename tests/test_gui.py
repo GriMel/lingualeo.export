@@ -321,19 +321,65 @@ class TestStatisticsDialog(BaseTest, Results):
         Set up initial condition:
         -prepared list of dictionaries with results
         """
-        self.lingualeo = Lingualeo("g@i.ua", "12345")
+        self.array = []
+        row = {}
+        words = ["cat", "dog", "cockatoo", "smile"]
+        contexts = ["I have a cat.",
+                    "I have a dog.",
+                    "",
+                    "Let's smile."
+                    ]
+        translations = ["кот", "cобака", "какаду", "улыбка"]
+        results = sorted(self.RESULTS.values())
+        for index, (word, tword, context)\
+                in enumerate(zip(words, translations, contexts)):
+            row = {
+                   "word": word,
+                   "result": results[index],
+                   "tword": tword,
+                   "context": context
+                }
+            self.array.append(row)
+        super(TestStatisticsDialog, self).setUp()
+        self.stat_dialog = StatisticsDialog(self.array)
 
-    @staticmethod
-    def prepareListOfWords():
+    def test_correct_counts(self):
         """
-        Prepare list of words - 
+        Every label has its own count of words
+        Total = 4
+        Not added = 1
+        Added = 1
+        No translation = 1
+        Exist = 1
         """
-        words = ['cat', 'dog', 'cockatoo', 'smile', 'sqwet']
-        translates = ['кот', 'собака', 'какаду', 'улыбка', '']
-        for word in words:
-            response = self.lingualeo.get_translate(word)
+        self.assertEqual('4', self.stat_dialog.values[0].text())
+        self.assertEqual('1', self.stat_dialog.values[1].text())
+        self.assertEqual('1', self.stat_dialog.values[2].text())
+        self.assertEqual('1', self.stat_dialog.values[3].text())
+        self.assertEqual('1', self.stat_dialog.values[4].text())
 
+    def test_correct_table_colors(self):
+        """
+        Every row in table has its own color
+        1) added - green.
+        2) exists - red.
+        3) no translation - yellow.
+        4) not added - white.
+        """
+        self.assertEqual(self.stat_dialog.table.item(0, 0).backgroundColor(),
+                         QtCore.Qt.green)
+        self.assertEqual(self.stat_dialog.table.item(1, 0).backgroundColor(),
+                         QtCore.Qt.red)
+        self.assertEqual(self.stat_dialog.table.item(2, 0).backgroundColor(),
+                         QtCore.Qt.yellow)
+        self.assertEqual(self.stat_dialog.table.item(3, 0).backgroundColor(),
+                         QtCore.Qt.white)
 
+    def test_correct_table_row_counts(self):
+        """
+        Table has four rows
+        """
+        self.assertEqual(self.stat_dialog.table.rowCount(), 4)
 
 
 class TestAboutDialog(BaseTest):
