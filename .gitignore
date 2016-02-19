@@ -20,3 +20,4 @@ src/log.out
 sandbox/
 .coverage
 htmlcov/
+cover/
