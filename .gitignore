@@ -18,3 +18,5 @@ src/log.out
 *.json
 !/src/data/data.json
 sandbox/
+.coverage
+htmlcov/
