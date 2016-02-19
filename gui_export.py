@@ -1052,7 +1052,7 @@ class WorkThread(QtCore.QThread, Results):
         result = None
         row = None
         data = None
-        for index, i in enumerate(self.array):
+        for i in enumerate(self.array):
             try:
                 word = i.get('word').lower()
                 context = i.get('context', '')
