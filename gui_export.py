@@ -30,9 +30,9 @@ from word import Kindle, Text
 from service import Lingualeo
 from log_conf import setLogger
 
-#@FROZEN
-#from pydub import AudioSegment
-#from pydub.playback import play
+# @FROZEN
+# from pydub import AudioSegment
+# from pydub.playback import play
 
 
 def centerUI(self):
@@ -212,8 +212,8 @@ class AreYouSure(CustomDialog):
         """
         Construct AreYouSure GUI
         """
-        self.setWindowFlags(self.windowFlags()
-            & ~QtCore.Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(
+            self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
         layout = QtGui.QVBoxLayout()
         hor_lay = QtGui.QHBoxLayout()
         self.sure_label = QtGui.QLabel()
@@ -374,7 +374,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def createAuthBlock(self):
         """
-        Construct block for email/password 
+        Construct block for email/password
         """
         self.auth_label = QtGui.QLabel()
         self.email_label = QtGui.QLabel()
@@ -396,7 +396,7 @@ class MainWindow(QtGui.QMainWindow):
     def createInputBlock(self):
         """
         Init block for Input
-        """        
+        """
         self.input_radio = QtGui.QRadioButton()
         self.input_radio.setObjectName("input")
         self.input_radio.setChecked(True)
@@ -556,7 +556,7 @@ class MainWindow(QtGui.QMainWindow):
         Set validators to all input fields to
         prevent incorrect input value:
         -no non-English letters
-        -no !@#$%^&*() 
+        -no !@#$%^&*()
         """
         regexp = QtCore.QRegExp("^[a-zA-Z`'-]+(\s+[a-zA-Z`'-]+)*$")
         validator = QtGui.QRegExpValidator(regexp)
@@ -1308,7 +1308,7 @@ class ExportDialog(CustomDialog, Results):
         """
         event.accept()
         self.task.stop()
-        s = StatisticsWindow(self.stat)
+        s = StatisticsDialog(self.stat)
         s.exec_()
         self.closed.emit()
 
@@ -1392,7 +1392,7 @@ class ExportDialog(CustomDialog, Results):
             self.finish()
 
 
-class StatisticsWindow(CustomFullDialog, Results):
+class StatisticsDialog(CustomFullDialog, Results):
     """
     Dialog for showing results of export.
     """
@@ -1400,14 +1400,14 @@ class StatisticsWindow(CustomFullDialog, Results):
 
     def __init__(self, stat):
         """
-        Initializing StatisticsWindow.
+        Initializing StatisticsDialog.
         Get list of dictionaries:
         {"word": word,
          "result": result,
          "tword": translate,
          "context": context}        
         """
-        super(StatisticsWindow, self).__init__()
+        super(StatisticsDialog, self).__init__()
         self.logger = setLogger(name="Statistics")
         self.stat = stat
         self.initUI()
@@ -1415,7 +1415,7 @@ class StatisticsWindow(CustomFullDialog, Results):
         self.logger.debug("Inited Statistics")
 
     def initUI(self):
-        """Construct StatisticsWindow GUI"""
+        """Construct StatisticsDialog GUI"""
         self.list_view = QtGui.QListWidget()
         self.table = QtGui.QTableWidget()
         self.table.setColumnCount(3)
@@ -1555,8 +1555,8 @@ class ExceptionDialog(QtGui.QDialog):
         self.more_edit.setText(self.full)
         self.show_hide_button.setText(self.tr("Show details..."))
         self.ok_button.setText("OK")
-        send_link = "mailto:{0}?subject=Kindleo bug&body={1}".format(self.EMAIL,
-                                                                     self.full)
+        send_link = "mailto:{0}?subject="\
+                    "Kindleo bug&body={1}".format(self.EMAIL, self.full)
         self.send_button.setText(self.tr("Send report"))
         self.send_button.setObjectName(send_link)
 
@@ -1638,19 +1638,24 @@ def detectOtherVersions():
 
 def main():
 
-    app = QtGui.QApplication(sys.argv)
-    # don't let closing the whole app after any dialog closed
-    app.setQuitOnLastWindowClosed(False)
-    logger = setLogger(name='main')
-    # let only one instance of program running
-    # this version
+    # Let only one instance of program running
+    # this version.
+    # Pylint cares about 'defined but not used', so
+    # we desable this check
+    # also we add 'noqa' for pyflakes
     # pylint: disable=W0612
     single = singleton.SingleInstance()  # noqa
     # pylint: enable=W0612
     # other versions
     detectOtherVersions()
-    sys._excepthook = sys.excepthook
 
+    app = QtGui.QApplication(sys.argv)
+    # don't let closing the whole app after any dialog closed
+    app.setQuitOnLastWindowClosed(False)
+    logger = setLogger(name='main')
+
+    # excepthook to show silenced exceptions
+    sys._excepthook = sys.excepthook
     sys.excepthook = exceptionHook
 
     logger.debug("New session started")
