@@ -12,7 +12,9 @@ import json
 import sqlite3
 from PyQt4.QtTest import QTest
 from PyQt4 import QtGui, QtCore
-from gui_export import MainWindow, ExportDialog
+from gui_export import MainWindow, ExportDialog, StatisticsDialog,\
+                       AboutDialog, NotificationDialog, ExceptionDialog,\
+                       Results
 from word import Kindle
 from service import Lingualeo
 
@@ -60,9 +62,9 @@ def createSqlBase(malformed=False, empty=False, valid=True):
             f.write(b'tt')
 
 
-def createLingualeoUser():
+def createLingualeoUser(premium=False):
     """return test Lingualeo user"""
-    return {"premium_type": 1,
+    return {"premium_type": +premium,
             "fullname": "Bob Gubko",
             "meatballs": 1500,
             "avatar_mini": 'https://d144fqpiyasmrr'
@@ -71,7 +73,26 @@ def createLingualeoUser():
             "xp_level": 34}
 
 
-class TestMainWindow(unittest.TestCase):
+class BaseTest(unittest.TestCase):
+    """
+    Base class for tests
+    """
+
+    def setUp(self):
+        """
+        Construct QApplication
+        """
+        self.app = QtGui.QApplication([])
+
+    def tearDown(self):
+        """
+        Prevent gtk-Critical messages.
+        Remove app
+        """
+        self.app.deleteLater()
+
+
+class TestMainWindow(BaseTest):
 
     def setUp(self):
         """
@@ -84,10 +105,10 @@ class TestMainWindow(unittest.TestCase):
             "password":"123456789"
         }
         """
+        super(TestMainWindow, self).setUp()
         logging.disable(logging.CRITICAL)
         with open('credentials.json') as f:
             credentials = json.loads(f.read())
-        self.app = QtGui.QApplication([])
         self.ui = MainWindow()
         self.ui.language = 'en'
         self.ui.loadTranslation()
@@ -99,7 +120,7 @@ class TestMainWindow(unittest.TestCase):
         Prevent gtk-Critical messages
         Remove test.db in case if it's present
         """
-        self.app.deleteLater()
+        super(TestMainWindow, self).tearDown()
         if os.path.exists(TEST_DB):
             os.remove(TEST_DB)
         if os.path.exists(TEST_TXT):
@@ -136,7 +157,7 @@ class TestMainWindow(unittest.TestCase):
         validator = self.ui.input_word_edit.validator()
         text = "work раве"
         state, word, pos = validator.validate(text, 0)
-        self.assertEqual(state==QtGui.QValidator.Acceptable, False)
+        self.assertEqual(state == QtGui.QValidator.Acceptable, False)
 
     def test_empty_login_pass(self):
         """
@@ -144,6 +165,7 @@ class TestMainWindow(unittest.TestCase):
         """
         self.ui.email_edit.setText("")
         self.ui.pass_edit.setText("")
+        self.ui.input_word_edit.setText("test")
         leftMouseClick(self.ui.export_button)
         self.assertEqual(self.ui.status_bar.currentMessage(),
                          "Email or password are incorrect")
@@ -216,62 +238,121 @@ class TestMainWindow(unittest.TestCase):
 
     def test_kindle_malformed_not_run(self):
         """
-        Kindle database malformed - show 'Repair' button and an error in statusbar.
+        Kindle database malformed - show 'Repair' and error in statusbar.
         """
         createSqlBase(malformed=True)
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
         leftMouseClick(self.ui.export_button)
-        self.assertEqual(self.ui.repair_button.isHidden(),False)
+        self.assertEqual(self.ui.repair_button.isHidden(), False)
         self.assertEqual(self.ui.status_bar.currentMessage(),
                          "Database is malformed. Click 'Repair'")
-    '''
-    def test_input_run(self):
-        """
-        If Input is set - construct ExportDialog
-        """
-        self.ui.input_word_edit.setText("base")
-        leftMouseClick(self.ui.export_button)
-        self.assertEqual(self.ui.status_bar.currentMessage(),
-            "Input > Lingualeo")
-    
-    def test_word_run(self):
-        """
-        If 
-        """
-        createTxtFile()
-        txt = TEST_TXT
-        self.ui.text_radio.setChecked(True)
-        self.ui.text_path.setText(txt)
-        leftMouseClick(self.ui.export_button)
-        self.assertEqual(self.ui.status_bar.currentMessage(),
-            "Txt > Lingualeo")
-    '''
+
     def test_russian_translation(self):
         """
-        Test if russian translation is loaded
+        Selecting RU from Language menu - russian translation is loaded
         """
         lang_item = self.ui.language_menu.actions()[1]
         lang_item.trigger()
         self.assertEqual(self.ui.export_button.text(), "Экспорт")
 
-    def test_export_premium(self):
+
+class TestExportDialog(BaseTest):
+    """
+    Class for testing ExportDialog
+    """
+
+    def setUp(self):
         """
-        test for unlimited sign if user is premium
+        Set up initial condition:
+        -special lingualeo user
+        """
+        super(TestExportDialog, self).setUp()
+        self.lingualeo = Lingualeo("aaa@mail.com", "12345")
+
+    def tearDown(self):
+        """
+        Prevent gtk-Critical messages.
+        Remove test.db and test.txt in case if they're present.
+        """
+        super(TestExportDialog, self).tearDown()
+        if os.path.exists(TEST_DB):
+            os.remove(TEST_DB)
+        if os.path.exists(TEST_TXT):
+            os.remove(TEST_TXT)
+
+    def test_export_kindle_premium(self):
+        """
+        Test for unlimited sign if user is premium
         """
         createSqlBase()
         handler = Kindle(TEST_DB)
         array = handler.get()
         duplicates = 0
         total = len(array)
-        auth_info = createLingualeoUser()
-        lingualeo = Lingualeo("aaa@mail.com", "12345")
-        lingualeo.auth_info = auth_info
-        lingualeo.initUser()
-        dialog = ExportDialog(array, total, duplicates, lingualeo)
+        self.lingualeo.auth_info = createLingualeoUser(premium=True)
+        self.lingualeo.initUser()
+        dialog = ExportDialog(array, total, duplicates, self.lingualeo)
         self.assertEqual("∞", dialog.meatballs_value_label.text())
 
 
+class TestStatisticsDialog(unittest.TestCase, Results):
+    """
+    Class for testing StatisticsDialog
+    """
+
+    def setUp(self):
+        """
+        Set up initial condition:
+        -prepared list of dictionaries with results
+        """
+        self.lingualeo = Lingualeo("g@i.ua", "12345")
+
+    @staticmethod
+    def prepareListOfWords():
+        """
+        Prepare list of words - 
+        """
+        words = ['cat', 'dog', 'cockatoo', 'smile', 'sqwet']
+        translates = ['кот', 'собака', 'какаду', 'улыбка', '']
+        for word in words:
+            response = self.lingualeo.get_translate(word)
+
+
+
+
+class TestAboutDialog(BaseTest):
+    """
+    Class for testing 'About' dialog.
+    """
+    JSON_FILE = os.path.join("src", "data", "data.json")
+
+    def setUp(self):
+        """
+        Set up initial condition:
+        -prepared json file
+        -version, author, idea, email loaded
+        """
+        super(TestAboutDialog, self).setUp()
+        with open(self.JSON_FILE) as f:
+            data_info = json.loads(f.read())
+        self.version = data_info['version']
+        self.author = data_info['author']
+        self.idea = data_info['idea']
+        self.email = data_info['e-mail']
+        self.about = AboutDialog()
+
+    def test_version_present(self):
+        """
+        Data in json == data in 'About'
+        """
+        text = self.about.about_label.text()
+        version_text = self.about.version_label.text()
+        email_text = self.about.email_label.text()
+        self.assertIn(self.author, text)
+        self.assertIn(self.idea, text)
+        self.assertIn(self.email, email_text)
+        self.assertIn(self.version, version_text)
 
 if __name__ == "__main__":
     unittest.main()
