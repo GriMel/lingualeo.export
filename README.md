@@ -1,5 +1,7 @@
 Kindleo
 ================
+
+[![Join the chat at https://gitter.im/GriMel/Kindleo](https://badges.gitter.im/GriMel/Kindleo.svg)](https://gitter.im/GriMel/Kindleo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 ![QuantifiedCode](https://www.quantifiedcode.com/api/v1/project/eb76e321b5cf49be89e770ce34a0bfb7/badge.svg)
 [![Code Health](https://landscape.io/github/GriMel/Kindleo/master/landscape.svg?style=flat)](https://landscape.io/github/GriMel/Kindleo/master)
 [![Build Status](https://travis-ci.org/GriMel/Kindleo.svg?branch=master)](https://travis-ci.org/GriMel/Kindleo)
