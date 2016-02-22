@@ -56,6 +56,7 @@ def createSqlBase(malformed=False, empty=False, valid=True):
                    'intending',
                    'intend',
                    'en',
+                   '0'
                    0,1450067334997,
                    '')
         """)
