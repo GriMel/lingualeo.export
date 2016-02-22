@@ -4,6 +4,7 @@ Kindleo
 [![Code Health](https://landscape.io/github/GriMel/Kindleo/master/landscape.svg?style=flat)](https://landscape.io/github/GriMel/Kindleo/master)
 [![Build Status](https://travis-ci.org/GriMel/Kindleo.svg?branch=master)](https://travis-ci.org/GriMel/Kindleo)
 [![Coverage Status](https://coveralls.io/repos/github/GriMel/Kindleo/badge.svg?branch=master)](https://coveralls.io/github/GriMel/Kindleo?branch=master)
+[![Gitter](https://badges.gitter.im/GriMel/Kindleo.svg)](https://gitter.im/GriMel/Kindleo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 <br>
 
 GUI version of original lingualeo.export<br>
