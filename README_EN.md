@@ -16,6 +16,7 @@
         * No translation received (incorrect word, not added)
         * Not added (paused export)
 * More
-    * English/Russian/Ukrainian interface;
+    * Multilingual interface (English/Russian/Ukrainian);
+    * Cross-platforming (Win/Ubuntu);
     * option to clean Kindle VocabBuilder;
     * option to repair Kindle VocabBuilder;
