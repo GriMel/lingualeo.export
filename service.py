@@ -111,38 +111,26 @@ class Lingualeo(object):
                              cookies=self.cookies,
                              timeout=self.TIMEOUT)
 
-    def add_word_multiple(self, array):
-        """
-        Add the array of words to Lingualeo vocabulary.
-        """
-        url = self.ADD_WORD_MULTI
-        data = dict()
-        for index, i in enumerate(array):
-            data["words["+index+"][word]"] = i['word']
-            data["words["+index+"][tword]"] = i['tword']
-            data["words["+index+"][context]"] = i['context']
-
-        return requests.post(url,
-                             data,
-                             cookies=self.cookies)
-
-    def isPremium(self):
-        """
-        Tells if user has a premium status
-        """
-        return self.premium
-
-    def substractMeatballs(self):
-        """
-        Method for substracting meatballs
-        """
-        self.meatballs -= 1
+    # def add_word_multiple(self, array):
+    #     """
+    #     Add the array of words to Lingualeo vocabulary.
+    #    """
+    #     url = self.ADD_WORD_MULTI
+    #     data = dict()
+    #     for index, i in enumerate(array):
+    #         data["words["+index+"][word]"] = i['word']
+    #         data["words["+index+"][tword]"] = i['tword']
+    #         data["words["+index+"][context]"] = i['context']
+    #
+    #     return requests.post(url,
+    #                          data,
+    #                          cookies=self.cookies)
 
     def isEnoughMeatballs(self, words):
         """
         Check if meatballs > words
         """
-        if not self.isPremium() and self.meatballs < words:
+        if not self.premium and self.meatballs < words:
             return False
         else:
             return True

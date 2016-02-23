@@ -1351,9 +1351,9 @@ class ExportDialog(CustomDialog, Results):
         if data['sent']:
             row = data['row']
             if (row['result'] == self.RESULTS['ad'] and
-                    not self.lingualeo.isPremium()):
+                    not self.lingualeo.premium):
 
-                self.lingualeo.substractMeatballs()
+                self.lingualeo.meatballs -= 1
                 self.meatballs_value_label.setText(
                     str(self.lingualeo.meatballs))
         else:
