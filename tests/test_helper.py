@@ -200,7 +200,7 @@ class TestLingualeo(unittest.TestCase):
                     'translate_id': 201656,
                     'translate_value': 'книга',
                     'word_id': 5756,
-                    'word_rank': 318585,
+                    'word_rank': 320018,
                     'word_speech_parts': {
                         '1': {
                             'code': 'Adjective',

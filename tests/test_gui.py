@@ -6,6 +6,7 @@ Module for tests
 
 Recommended to run with nosetests as:
 nosetests --exe --with-coverage --cover-erase --cover-html
+--cover-package=gui_export.py,service.py,handler.py
 """
 
 import unittest
@@ -259,7 +260,6 @@ class TestMainWindow(BaseTest):
         Email/password set, set word in 'Input' - ExportDialog appears
         """
 
-
     def test_russian_translation(self):
         """
         Selecting RU from Language menu - russian translation is loaded
@@ -267,6 +267,14 @@ class TestMainWindow(BaseTest):
         lang_item = self.ui.language_menu.actions()[1]
         lang_item.trigger()
         self.assertEqual(self.ui.export_button.text(), "Экспорт")
+
+    def test_close_event(self):
+        """
+        On close event triggered 'AreYouSure' appears
+        """
+        self.ui.close()
+        self.assertIn("Are you", self.ui.close_window.sure_label.text())
+        self.assertFalse(self.ui.close_window.check_item.isChecked())
 
 
 class TestExportDialog(BaseTest):
