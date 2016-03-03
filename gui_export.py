@@ -54,8 +54,8 @@ def createSeparator():
     separator.setFrameShadow(QtGui.QFrame.Sunken)
     return separator
 
-#@FROZEN
-#def playSound(name):
+# @FROZEN
+# def playSound(name):
 #    """sound notification"""
 #    pass
 #
@@ -217,6 +217,7 @@ class AreYouSure(CustomDialog):
         layout = QtGui.QVBoxLayout()
         hor_lay = QtGui.QHBoxLayout()
         self.sure_label = QtGui.QLabel()
+        self.sure_label.setAlignment(QtCore.Qt.AlignCenter)
         self.check_item = QtGui.QCheckBox()
         self.yes_button = QtGui.QPushButton()
         self.no_button = QtGui.QPushButton()
@@ -1015,9 +1016,9 @@ class MainWindow(QtGui.QMainWindow):
         - show Are you Sure
         - save defaults
         """
-        a = AreYouSure()
-        a.saved.connect(self.saveDefaults)
-        a.exec_()
+        self.close_window = AreYouSure()
+        self.close_window.saved.connect(self.saveDefaults)
+        self.close_window.exec_()
         event.ignore()
 
 
@@ -1404,7 +1405,7 @@ class StatisticsDialog(CustomFullDialog, Results):
         {"word": word,
          "result": result,
          "tword": translate,
-         "context": context}        
+         "context": context}
         """
         super(StatisticsDialog, self).__init__()
         self.logger = setLogger(name="Statistics")
