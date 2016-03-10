@@ -520,5 +520,27 @@ class TestAboutDialog(BaseTest):
         self.assertIn(self.email, email_text)
         self.assertIn(self.version, version_text)
 
+
+class TestNotificationDialog(BaseTest):
+    """
+    Class to test notifications
+    """
+
+    def setUp(self):
+        """
+        Prepare title and text for notification
+        """
+        super(TestNotificationDialog, self).setUp()
+        self.title = "Warning!"
+        self.main_text = "Something happened"
+        self.ui = NotificationDialog(self.title, self.main_text)
+
+    def test_correct_title_and_text(self):
+        """
+        Texts passed to constructor should be correct in GUI
+        """
+        self.assertEqual(self.ui.windowTitle(), self.title)
+        self.assertEqual(self.ui.text_label.text(), self.main_text)
+
 if __name__ == "__main__":
     unittest.main()
