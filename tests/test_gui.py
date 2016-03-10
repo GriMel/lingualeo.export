@@ -24,16 +24,34 @@ from service import Lingualeo
 
 TEST_DB = 'test.db'
 TEST_TXT = 'test.txt'
+TEST_SRC = 'test.ini'
 
 
 def leftMouseClick(widget):
     QTest.mouseClick(widget, QtCore.Qt.LeftButton)
 
 
-def createTxtFile():
-    with open(TEST_TXT, 'w') as f:
-        f.write('bacon')
-        f.write('simple')
+def createTxtFile(empty=False):
+    """
+    Creates test.txt with two words
+    """
+    if empty:
+        open(TEST_TXT, 'a').close()
+    else:
+        with open(TEST_TXT, 'w') as f:
+            f.write('bacon')
+            f.write('simple')
+
+
+def createSrcFile(email, password, language=None):
+    """
+    Creates src.ini with default email and password
+    """
+    settings = QtCore.QSettings(TEST_SRC, QtCore.QSettings.IniFormat)
+    settings.setValue("email", email)
+    settings.setValue("password", password)
+    if language:
+        settings.setValue("language", language)
 
 
 def createSqlBase(malformed=False, empty=False, valid=True):
@@ -130,6 +148,8 @@ class TestMainWindow(BaseTest):
             os.remove(TEST_DB)
         if os.path.exists(TEST_TXT):
             os.remove(TEST_TXT)
+        if os.path.exists(TEST_SRC):
+            os.remove(TEST_SRC)
 
     def test_only_input_checked(self):
         """
