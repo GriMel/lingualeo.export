@@ -18,6 +18,7 @@ class Lingualeo(object):
     ADD_WORD = "http://api.lingualeo.com/addword"
     ADD_WORD_MULTI = "http://api.lingualeo.com/addwords"
     GET_TRANSLATE = "http://api.lingualeo.com/gettranslates?word="
+    NO_MEATBALLS = 0
 
     def __init__(self, email, password):
         """
@@ -76,12 +77,22 @@ class Lingualeo(object):
                                     cookies=self.cookies,
                                     timeout=self.TIMEOUT)
             translate_list = response.json()['translate']
+            # sort by votes
             translate_list = sorted(translate_list,
                                     key=itemgetter('votes'),
                                     reverse=True)
+            # and pick the most voted word
             translate = translate_list[0]
             tword = translate['value']
             is_exist = bool(translate['is_user'])
+            # @TEMP
+            # The main idea is to check if another
+            # translation is already present in
+            # Lingualeo dictionary
+            # For example if top-voted translation
+            # for word book is = 'книга'
+            # and we have book-'бронировать' in our dictionary
+            # For now in this case I don't add 'книга'
             if not is_exist:
                 counter = Counter(i['is_user'] for i in translate_list)
                 if counter.get(1, 0) > 0:
