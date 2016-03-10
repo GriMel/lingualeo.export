@@ -302,7 +302,7 @@ class MainWindow(QtGui.QMainWindow):
     3 blocks - Input/Text/Kindle
     """
     ICON_FILE = os.path.join("src", "pics", "lingualeo.ico")
-    SRC = os.path.join("src", "src.ini")
+    SRC_FILE = os.path.join("src", "src.ini")
     VOCAB_PATH = os.path.join("Kindle",
                               "system",
                               "vocabulary",
@@ -593,6 +593,10 @@ class MainWindow(QtGui.QMainWindow):
         Check for Lingualeo - email/pass, connection
         """
         self.logger.debug("Checking lingualeo")
+        email = self.email_edit.text().strip(" ")
+        password = self.pass_edit.text().strip(" ")
+        self.lingualeo = Lingualeo(email, password)
+
         try:
             self.lingualeo.auth()
         # handle no internet connection/no site connection
@@ -611,14 +615,14 @@ class MainWindow(QtGui.QMainWindow):
             self.logger.debug(
                 "Lingualeo: WRONG email/pass incorrect")
             return False
-        if self.lingualeo.meatballs == 0:
+        self.lingualeo.initUser()
+        if self.lingualeo.meatballs == Lingualeo.NO_MEATBALLS:
             self.status_bar.showMessage(
                 self.tr("No meatballs"))
             self.logger.debug(
                 "Lingualeo: WRONG - no meatballs")
             return False
         self.logger.debug("Lingualeo is OK")
-        self.lingualeo.initUser()
         return True
 
     def inputOk(self):
@@ -979,9 +983,9 @@ class MainWindow(QtGui.QMainWindow):
         -password
         -language
         """
-        self.settings = QtCore.QSettings(
-            self.SRC, QtCore.QSettings.IniFormat
-            )
+        self.settings = QtCore.QSettings(self.SRC_FILE,
+                                         QtCore.QSettings.IniFormat
+                                         )
         if save_email:
             self.settings.setValue("email", self.email_edit.text())
             self.settings.setValue("password", self.pass_edit.text())
@@ -995,20 +999,18 @@ class MainWindow(QtGui.QMainWindow):
         -password
         -language
         """
-        try:
-            self.settings = QtCore.QSettings(
-                self.SRC, QtCore.QSettings.IniFormat
-                )
-            email = self.settings.value("email")
-            password = self.settings.value("password")
-            language = self.settings.value("language")
-            if language:
-                self.language = language
+
+        self.settings = QtCore.QSettings(self.SRC_FILE,
+                                         QtCore.QSettings.IniFormat
+                                         )
+        email = self.settings.value("email")
+        password = self.settings.value("password")
+        language = self.settings.value("language")
+        if language:
+            self.language = language
+        if email:
             self.email_edit.setText(email)
             self.pass_edit.setText(password)
-        # no ini file
-        except Exception:
-            self.logger.debug("Couldn't load defaults")
 
     def closeEvent(self, event):
         """
@@ -1372,7 +1374,7 @@ class ExportDialog(CustomDialog, Results):
             self.tr("{0} words processed "
                     "out of {1}").format(self.value,
                                          self.words_count))
-        if self.lingualeo.meatballs == 0:
+        if self.lingualeo.meatballs == Lingualeo.NO_MEATBALLS:
             self.task.stop()
             self.progress_bar.setValue(self.progress_bar.maximum())
             self.warning_info_label.setText(
