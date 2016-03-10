@@ -220,12 +220,32 @@ class TestMainWindow(BaseTest):
 
     def test_text_no_file_not_run(self):
         """
-        If no text file is selected - show an error in statusbar.
+        No text file is selected - show an error in statusbar.
         """
         self.ui.text_radio.setChecked(True)
         leftMouseClick(self.ui.export_button)
         self.assertEqual(self.ui.status_bar.currentMessage(),
                          "No txt file")
+
+    def test_text_wrong_format_not_run(self):
+        """
+        No '.txt' in text extension - show an error in statusbar
+        """
+        self.ui.text_radio.setChecked(True)
+        self.ui.text_path.setText(TEST_DB)
+        leftMouseClick(self.ui.export_button)
+        self.assertEqual(self.ui.status_bar.currentMessage(), "Not txt file")
+
+    def test_text_empty_file_not_run(self):
+        """
+        Text file empty - show an error in statusbar
+        """
+        createTxtFile(empty=True)
+        self.ui.text_radio.setChecked(True)
+        self.ui.text_path.setText(TEST_TXT)
+        leftMouseClick(self.ui.export_button)
+        self.assertEqual(self.ui.status_bar.currentMessage(),
+                         "Txt file is empty")
 
     def test_kindle_no_base_not_run(self):
         """
@@ -280,6 +300,25 @@ class TestMainWindow(BaseTest):
         self.assertEqual(self.ui.status_bar.currentMessage(),
                          "Database is malformed. Click 'Repair'")
 
+    def test_lingualeo_no_connection(self):
+        """
+        No connection - statusbar shows an error
+        """
+        Lingualeo.TIMEOUT = 0.01
+        self.ui.input_word_edit.setText("test")
+        leftMouseClick(self.ui.export_button)
+        self.assertEqual(self.ui.status_bar.currentMessage(), "No connection")
+
+    def test_lingualeo_no_meatballs(self):
+        """
+        No meatballs - statusbar shows an error
+        """
+        self.ui.input_word_edit.setText("test")
+        # we use 200 as zero just for test
+        Lingualeo.NO_MEATBALLS = 200
+        leftMouseClick(self.ui.export_button)
+        self.assertEqual(self.ui.status_bar.currentMessage(), "No meatballs")
+
     def test_run_export(self):
         """
         Email/password set, set word in 'Input' - ExportDialog appears
@@ -300,6 +339,38 @@ class TestMainWindow(BaseTest):
         self.ui.close()
         self.assertIn("Are you", self.ui.close_window.sure_label.text())
         self.assertFalse(self.ui.close_window.check_item.isChecked())
+        leftMouseClick(self.ui.close_window.yes_button)
+
+    def test_load_defaults(self):
+        """
+        The app loads saved e-mail and password
+        """
+        self.ui.SRC_FILE = TEST_SRC
+        email = "test@gmail.com"
+        password = "1234567890"
+        createSrcFile(email=email, password=password)
+        self.ui.loadDefaults()
+        self.assertEqual(email, self.ui.email_edit.text())
+        self.assertEqual(password, self.ui.pass_edit.text())
+
+    def test_save_defaults(self):
+        """
+        The app saves entered email and password to src.ini
+        """
+        email = "test@gmail.com"
+        password = "1234567890"
+        self.ui.SRC_FILE = TEST_SRC
+        self.ui.email_edit.setText(email)
+        self.ui.pass_edit.setText(password)
+        self.ui.close()
+        self.ui.close_window.check_item.setChecked(True)
+        leftMouseClick(self.ui.close_window.yes_button)
+        settings = QtCore.QSettings(TEST_SRC, QtCore.QSettings.IniFormat)
+        new_email = settings.value("email")
+        new_password = settings.value("password")
+        self.assertEqual(email, new_email)
+        self.assertEqual(password, new_password)
+
 
 
 class TestExportDialog(BaseTest):
