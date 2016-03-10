@@ -28,6 +28,9 @@ TEST_SRC = 'test.ini'
 
 
 def leftMouseClick(widget):
+    """
+    Imitate left click on widget
+    """
     QTest.mouseClick(widget, QtCore.Qt.LeftButton)
 
 
@@ -56,7 +59,7 @@ def createSrcFile(email, password, language=None):
 
 def createSqlBase(malformed=False, empty=False, valid=True):
     """
-    create test SQL base with name test.db
+    Create test SQL base with name test.db
     """
     conn = sqlite3.connect('test.db')
     if valid:
@@ -86,7 +89,9 @@ def createSqlBase(malformed=False, empty=False, valid=True):
 
 
 def createLingualeoUser(premium=False):
-    """return test Lingualeo user"""
+    """
+    Return test Lingualeo user
+    """
     return {"premium_type": +premium,
             "fullname": "Bob Gubko",
             "meatballs": 1500,
