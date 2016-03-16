@@ -452,17 +452,17 @@ class MainWindow(QtGui.QMainWindow):
         self.kindle_path = QtGui.QLineEdit()
         self.kindle_path.setReadOnly(True)
         self.kindle_words_layout = QtGui.QHBoxLayout()
-        self.all_words_radio = QtGui.QRadioButton()
-        self.all_words_radio.setChecked(True)
-        self.new_words_radio = QtGui.QRadioButton()
+        self.kindle_all_words_radio = QtGui.QRadioButton()
+        self.kindle_all_words_radio.setChecked(True)
+        self.kindle_new_words_radio = QtGui.QRadioButton()
         self.words_radio_group = QtGui.QButtonGroup()
-        self.words_radio_group.addButton(self.all_words_radio)
-        self.words_radio_group.addButton(self.new_words_radio)
+        self.words_radio_group.addButton(self.kindle_all_words_radio)
+        self.words_radio_group.addButton(self.kindle_new_words_radio)
         kindle_layout = QtGui.QGridLayout()
         kindle_layout.addWidget(self.kindle_button, 0, 0)
         kindle_layout.addWidget(self.kindle_path, 0, 1)
-        kindle_layout.addWidget(self.all_words_radio, 1, 0, 1, 0)
-        kindle_layout.addWidget(self.new_words_radio, 2, 0, 1, 0)
+        kindle_layout.addWidget(self.kindle_all_words_radio, 1, 0, 1, 0)
+        kindle_layout.addWidget(self.kindle_new_words_radio, 2, 0, 1, 0)
 
         return kindle_layout
 
@@ -547,9 +547,9 @@ class MainWindow(QtGui.QMainWindow):
 
         self.kindle_hint.setText(self.tr(
             "Base is here:<br>{}".format(self.VOCAB_PATH)))
-        self.all_words_radio.setText(self.tr("All words (recommended)"))
-        self.new_words_radio.setText(self.tr("Only new"))
-        self.new_words_radio.setToolTip(self.tr("Words, marked for learning"))
+        self.kindle_all_words_radio.setText(self.tr("All words (recommended)"))
+        self.kindle_new_words_radio.setText(self.tr("Only new"))
+        self.kindle_new_words_radio.setToolTip(self.tr("Words, marked for learning"))
         self.kindle_button.setText(self.tr("Path"))
 
         self.export_button.setText(self.tr("Export"))
@@ -594,8 +594,8 @@ class MainWindow(QtGui.QMainWindow):
         self.text_button.setEnabled(text)
         self.text_path.setEnabled(text)
         self.kindle_hint.setEnabled(kindle)
-        self.all_words_radio.setEnabled(kindle)
-        self.new_words_radio.setEnabled(kindle)
+        self.kindle_all_words_radio.setEnabled(kindle)
+        self.kindle_new_words_radio.setEnabled(kindle)
         self.kindle_button.setEnabled(kindle)
         self.kindle_path.setEnabled(kindle)
         self.kindle_truncate_button.setEnabled(kindle)
@@ -858,7 +858,7 @@ class MainWindow(QtGui.QMainWindow):
             # so we temporary count distinct words.
             # Until nltk module is implemented,
             # this will be the temporary solution
-            only_new_words = self.new_words_radio.isChecked()
+            only_new_words = self.kindle_new_words_radio.isChecked()
             conn = sqlite3.connect(self.file_name)
             if only_new_words:
                 command = "SELECT COUNT(DISTINCT word)\
