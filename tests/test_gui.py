@@ -18,11 +18,12 @@ from PyQt4.QtTest import QTest
 from PyQt4 import QtGui, QtCore
 from gui_export import MainWindow, ExportDialog, StatisticsDialog,\
                        AboutDialog, NotificationDialog, ExceptionDialog,\
-                       Results
+                       Results, AreYouSure
 from handler import Kindle
 from service import Lingualeo
 
 TEST_DB = 'test.db'
+REPAIR_DB = 'test2.db'
 TEST_TXT = 'test.txt'
 TEST_SRC = 'test.ini'
 
@@ -34,7 +35,16 @@ def leftMouseClick(widget):
     QTest.mouseClick(widget, QtCore.Qt.LeftButton)
 
 
-def createTxtFile(empty=False):
+def createTimer(widget):
+    """
+    Create timer for closing widgets
+    """
+    timer = QtCore.QTimer()
+    timer.timeout.connect(widget.close)
+    return timer
+
+
+def createTxtFile(empty=False, array=None):
     """
     Creates test.txt with two words
     """
@@ -42,8 +52,12 @@ def createTxtFile(empty=False):
         open(TEST_TXT, 'a').close()
     else:
         with open(TEST_TXT, 'w') as f:
-            f.write('bacon')
-            f.write('simple')
+            if array:
+                for i in array:
+                    f.write(i+"\n")
+            else:
+                f.write("test"+"\n")
+                f.write("testimony"+"\n")
 
 
 def createSrcFile(email, password, language=None):
@@ -57,32 +71,90 @@ def createSrcFile(email, password, language=None):
         settings.setValue("language", language)
 
 
-def createSqlBase(malformed=False, empty=False, valid=True):
+def createSqlBase(db_name=TEST_DB,
+                  malformed=False,
+                  valid=True,
+                  array=None,
+                  new=0):
     """
     Create test SQL base with name test.db
     """
-    conn = sqlite3.connect('test.db')
+    words_create_command = """
+        CREATE TABLE WORDS
+        (id TEXT PRIMARY KEY NOT NULL,
+            word TEXT,
+            stem TEXT,
+            lang TEXT,
+            category INTEGER DEFAULT 0,
+            timestamp INTEGER DEFAULT 0,
+            profileid TEXT);
+        """
+    lookups_create_command = """
+        CREATE TABLE LOOKUPS
+        (id TEXT PRIMARY KEY NOT NULL,
+            word_key TEXT,
+            book_key TEXT,
+            dict_key TEXT,
+            pos TEXT,
+            usage TEXT,
+            timestamp INTEGER DEFAULT 0);
+        """
+    words_insert_command = """
+        INSERT INTO "WORDS" VALUES
+            (:id,
+             :word,
+             :stem,
+             'en',
+             :category,
+             0,
+             '')
+        """
+    lookups_insert_command = """
+        INSERT INTO "LOOKUPS" VALUES
+            (:id,
+             :word_key,
+             'book_key',
+             '',
+             'pos',
+             :usage,
+             0)
+        """
     if valid:
-        conn.execute("""
-            CREATE TABLE WORDS
-            (id TEXT PRIMARY KEY NOT NULL,
-                word TEXT, stem TEXT, lang TEXT,
-                category INTEGER DEFAULT 0,
-                timestamp INTEGER DEFAULT 0,
-                profileid TEXT);
-             """)
-    if valid and not empty:
-        conn.execute("""
-            INSERT INTO "WORDS"
-            VALUES('en:intending',
-                   'intending',
-                   'intend',
-                   'en',
-                   0,
-                   1450067334997,
-                   '')
-        """)
-    conn.commit()
+        with sqlite3.connect(db_name) as conn:
+            conn.execute(words_create_command)
+            conn.execute(lookups_create_command)
+    if valid and array:
+        assert new <= len(array)
+        new_array = []
+        for index, word in enumerate(array):
+            row = {}
+            #    {
+            #     'word_id': "en:doing", 'lookups_id': 'DO',
+            #     'word': "doing", 'stem': "do",
+            #     'category': 100, 'usage': "He enjoyed doing this"
+            #    }
+            row['word_id'] = 'en:' + word
+            row['lookups_id'] = word[:2].upper()
+            row['word'] = word
+            row['stem'] = word
+            row['category'] = 0 if index < new else 100
+            row['usage'] = "Test test " + word
+            new_array.append(row)
+        with sqlite3.connect(db_name) as conn:
+            for row in new_array:
+                conn.execute(words_insert_command,
+                             {
+                              'id': row['word_id'],
+                              'word': row['word'],
+                              'stem': row['stem'],
+                              'category': row['category']
+                             })
+                conn.execute(lookups_insert_command,
+                             {
+                              'id': row['lookups_id'],
+                              'word_key': row['word_id'],
+                              'usage': row['usage']
+                             })
     if malformed:
         with open(TEST_DB, 'wb') as f:
             f.write(b'tt')
