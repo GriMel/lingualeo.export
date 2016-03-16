@@ -18,7 +18,9 @@ class Lingualeo(object):
     ADD_WORD = "http://api.lingualeo.com/addword"
     ADD_WORD_MULTI = "http://api.lingualeo.com/addwords"
     GET_TRANSLATE = "http://api.lingualeo.com/gettranslates?word="
+    # added for test purposes
     NO_MEATBALLS = 0
+    PREMIUM = 0
 
     def __init__(self, email, password):
         """
@@ -41,7 +43,7 @@ class Lingualeo(object):
         Retrieve information about user
         from server's response.
         """
-        self.premium = self.auth_info['premium_type']
+        self.premium = self.auth_info['premium_type'] or self.PREMIUM
         self.fname = self.auth_info['fullname']
         self.lvl = self.auth_info['xp_level']
         if not self.premium:
