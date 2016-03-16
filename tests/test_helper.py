@@ -80,6 +80,7 @@ class TestLingualeo(unittest.TestCase):
         """
         Authenticate test user
         """
+        Lingualeo.PREMIUM = 0
         self.lingualeo = Lingualeo(self.EMAIL, self.PASSWORD)
         self.lingualeo.auth()
         self.maxDiff = None
@@ -99,7 +100,7 @@ class TestLingualeo(unittest.TestCase):
         # The most popular translation, though, is 'книга'
         self.assertEqual(result,
                          {'is_exist': True,
-                          'word':"book",
+                          'word': "book",
                           'tword': self.TEST_TWORD_EXISTS})
         result = self.lingualeo.get_translate(self.TEST_WORD_NON_EXISTS)
         self.assertEqual(result,
@@ -113,8 +114,8 @@ class TestLingualeo(unittest.TestCase):
         """
         response = self.lingualeo.add_word(self.TEST_WORD_EXISTS,
                                                 self.TEST_TWORD_EXISTS)
-        add_word_info = response.json()
-        self.assertEqual(self.TEST_ADD_INFO, add_word_info)
+        add_word_info = response.json()['is_new']
+        self.assertEqual(0, add_word_info)
 
     def test_init_info(self):
         """
@@ -143,7 +144,6 @@ class TestLingualeo(unittest.TestCase):
         self.assertEqual(self.lingualeo.avatar, None)
 
 
-
 class TestKindleHandler(unittest.TestCase):
     """
     Ensure that Kindle handler returns expected result
@@ -157,9 +157,10 @@ class TestKindleHandler(unittest.TestCase):
         if os.path.exists(self.TEST_DB):
             os.remove(self.TEST_DB)
         self.handler = Kindle(source=self.TEST_DB)
-        self.array = createKindleDatabase(self.TEST_DB)
-        self.new_words = Counter(i['category'] for i in self.array)[0]
+        self.array = ['tast', 'test', 'tist', 'tost']
+        self.new_words = 3
         self.all_words = len(self.array)
+        createSqlBase(array=self.array, new=self.new_words)
 
     def tearDown(self):
         """
