@@ -727,7 +727,7 @@ class MainWindow(QtGui.QMainWindow):
         self.logger.debug("%s - DB is OK", path)
         return True
 
-    def wordsOk(self):
+    def removeDuplicates(self):
         """
         Check for duplicates.
         The same word can appear with different context.
@@ -740,18 +740,10 @@ class MainWindow(QtGui.QMainWindow):
             if not occur[row['word']]:
                 temp.append(row)
 
-        ok_count = len(temp)
         wrong_count = len(self.array) - len(temp)
-        if ok_count == 0:
-            self.status_bar.showMessage(
-                self.tr("No English words"))
-            self.logger.debug("No English words")
-            return False
         if wrong_count > 0:
             self.logger.debug("%i words removed", wrong_count)
         self.array = temp[:]
-        self.logger.debug("Words are OK")
-        return True
 
     def kindleRepairDatabase(self):
         """
@@ -813,9 +805,6 @@ class MainWindow(QtGui.QMainWindow):
         Preparing and exporting words
         """
         self.logger.debug("Starting export")
-        email = self.email_edit.text().strip(" ")
-        password = self.pass_edit.text().strip(" ")
-        self.lingualeo = Lingualeo(email, password)
 
         # Input selected
         if self.input_radio.isChecked():
@@ -1062,7 +1051,7 @@ class WorkThread(QtCore.QThread, Results):
         result = None
         row = None
         data = None
-        for i in enumerate(self.array):
+        for i in self.array:
             try:
                 word = i.get('word').lower()
                 context = i.get('context', '')
