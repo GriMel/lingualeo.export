@@ -264,13 +264,20 @@ class NotificationDialog(CustomDialog):
     """
     ICON_FILE = os.path.join("src", "pics", "warning.ico")
 
-    def __init__(self, title, text):
+    def __init__(self):
         """
         Initializing NotificationDialog:
         -title.
         -text.
         """
         super(NotificationDialog, self).__init__()
+        self.title = None
+        self.text = None
+
+    def setVariables(self, title, text):
+        """
+        Init variables for NotificationDialog
+        """
         self.title = title
         self.text = text
         self.initUI()
@@ -337,6 +344,11 @@ class MainWindow(QtGui.QMainWindow):
         self.file_name = None
         self.array = None
         self.lingualeo = None
+        self.dialog = ExportDialog()
+        self.dialog.closed.connect(self.clearMessage)
+        self.close_window = AreYouSure()
+        self.close_window.saved.connect(self.saveDefaults)
+        self.notif = NotificationDialog()
         self.logger = setLogger(name='MainWindow')
         self.initUI()
         self.loadDefaults()
@@ -787,8 +799,8 @@ class MainWindow(QtGui.QMainWindow):
             Rename back to <b>vocab.db</b><br>
             and copy to Kindle.
             """.format(new_name))
-        notif = NotificationDialog(title="Repair", text=text)
-        notif.exec_()
+        self.notif.setVariables(title=self.tr("Repair"), text=text)
+        self.notif.exec_()
 
     def clearMessage(self):
         """
@@ -860,21 +872,18 @@ class MainWindow(QtGui.QMainWindow):
             self.array = handler.get()
             self.logger.debug("Export Kindle - Ready!")
         self.logger.debug("%i words before checking", before)
-        if not self.wordsOk():
-            self.logger.debug("Export refused - Words")
-            return
         if not self.lingualeoOk():
             self.logger.debug("Export refused - Lingualeo")
             return
+        self.removeDuplicates()
         after = len(self.array)
         self.logger.debug("%i words after checking", after)
         total = before
         duplicates = before - after
-        self.dialog = ExportDialog(self.array,
-                                   total,
-                                   duplicates,
-                                   self.lingualeo)
-        self.dialog.closed.connect(self.clearMessage)
+        self.dialog.setVariables(self.array,
+                                 total,
+                                 duplicates,
+                                 self.lingualeo)
         self.dialog.exec_()
 
     def kindleTruncate(self):
@@ -1018,8 +1027,6 @@ class MainWindow(QtGui.QMainWindow):
         - show Are you Sure
         - save defaults
         """
-        self.close_window = AreYouSure()
-        self.close_window.saved.connect(self.saveDefaults)
         self.close_window.exec_()
         event.ignore()
 
@@ -1133,7 +1140,7 @@ class ExportDialog(CustomDialog, Results):
     ICON_FILE = os.path.join("src", "pics", "export.ico")
     closed = QtCore.pyqtSignal()
 
-    def __init__(self, array, total, duplicates, lingualeo):
+    def __init__(self):
         """
         Initializing ExportDialog.
         Get the following values:
@@ -1147,20 +1154,32 @@ class ExportDialog(CustomDialog, Results):
         -lingualeo API
         """
         super(ExportDialog, self).__init__()
+        self.array = None
+        self.words_count = None
+        self.total = None
+        self.duplicates = None
+        self.lingualeo = None
+        self.task = None
+        self.stat = []
+        self.stat_window = StatisticsDialog()
+        self.value = 0
+        self.logger = setLogger(name='Export')
+        self.logger.debug("Inited ExportDialog")
+
+    def setVariables(self, array, total, duplicates, lingualeo):
+        """
+        Init variables of ExportDialog
+        """
         self.array = array
+        self.words_count = len(array)
         self.total = total
         self.duplicates = duplicates
-        self.stat = []
-        self.value = 0
+        self.lingualeo = lingualeo
         self.task = WorkThread(lingualeo)
         self.task.getData(array)
-        self.words_count = len(self.array)
-        self.lingualeo = lingualeo
-        self.logger = setLogger(name='Export')
         self.initUI()
         self.retranslateUI()
         self.initActions()
-        self.logger.debug("Inited ExportDialog")
 
     def initUI(self):
         """
@@ -1310,8 +1329,8 @@ class ExportDialog(CustomDialog, Results):
         """
         event.accept()
         self.task.stop()
-        s = StatisticsDialog(self.stat)
-        s.exec_()
+        self.stat_window.setVariables(self.stat)
+        self.stat_window.exec_()
         self.closed.emit()
 
     def changeTask(self):
@@ -1400,7 +1419,7 @@ class StatisticsDialog(CustomFullDialog, Results):
     """
     ICON_FILE = os.path.join("src", "pics", "statistics.ico")
 
-    def __init__(self, stat):
+    def __init__(self):
         """
         Initializing StatisticsDialog.
         Get list of dictionaries:
@@ -1414,10 +1433,16 @@ class StatisticsDialog(CustomFullDialog, Results):
         self.colors = []
         self.texts = []
         self.values = []
+        self.stat = None
+        self.logger.debug("Inited Statistics")
+
+    def setVariables(self, stat):
+        """
+        Init variables for StatisticsDialog
+        """
         self.stat = stat
         self.initUI()
         self.retranslateUI()
-        self.logger.debug("Inited Statistics")
 
     def initUI(self):
         """Construct StatisticsDialog GUI"""
