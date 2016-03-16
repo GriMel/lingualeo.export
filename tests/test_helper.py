@@ -9,100 +9,10 @@ import unittest
 from handler import Base, Kindle, Text, Input
 from service import Lingualeo
 from collections import Counter
+from tests.test_gui import createSqlBase
 import sqlite3
 import os
 import json
-
-def createKindleDatabase(db_name):
-    """
-    Create typical Kindle database with mastered and non-mastered words
-    """
-    array = [
-        {
-         'word_id': "en:even", 'lookups_id': 'CE',
-         'word': "even", 'stem': "even",
-         'category': 0, 'usage': "The integer is even"
-        },
-        {
-         'word_id': "en:watched", 'lookups_id': 'WA',
-         'word': "watch", 'stem': "watch",
-         'category': 0, 'usage': "I've watched this show"
-        },
-        {
-         'word_id': "en:nervous", 'lookups_id': 'NE',
-         'word': "nervous", 'stem': "nervous",
-         'category': 0, 'usage': "I'm nervous"
-        },
-        {
-         'word_id': "en:guests", 'lookups_id': 'GU',
-         'word': "guests", 'stem': "guest",
-         'category': 100, 'usage': "I had a lot of guests there"
-        },
-        {
-         'word_id': "en:doing", 'lookups_id': 'DO',
-         'word': "doing", 'stem': "do",
-         'category': 100, 'usage': "He enjoyed doing this"
-        }
-    ]
-    words_create_command = """
-        CREATE TABLE WORDS
-        (id TEXT PRIMARY KEY NOT NULL,
-            word TEXT,
-            stem TEXT,
-            lang TEXT,
-            category INTEGER DEFAULT 0,
-            timestamp INTEGER DEFAULT 0,
-            profileid TEXT);
-    """
-    lookups_create_command = """
-        CREATE TABLE LOOKUPS
-        (id TEXT PRIMARY KEY NOT NULL,
-            word_key TEXT,
-            book_key TEXT,
-            dict_key TEXT,
-            pos TEXT,
-            usage TEXT,
-            timestamp INTEGER DEFAULT 0);
-    """
-    words_insert_command = """
-        INSERT INTO "WORDS" VALUES
-            (:id,
-             :word,
-             :stem,
-             'en',
-             :category,
-             0,
-             '')
-    """
-    lookups_insert_command = """
-        INSERT INTO "LOOKUPS" VALUES
-            (:id,
-             :word_key,
-             'book_key',
-             '',
-             'pos',
-             :usage,
-             0)
-    """
-    with sqlite3.connect(db_name) as conn:
-        conn.execute(words_create_command)
-        conn.execute(lookups_create_command)
-        for row in array:
-            conn.execute(words_insert_command,
-                         {
-                          'id': row['word_id'],
-                          'word': row['word'],
-                          'stem': row['stem'],
-                          'category': row['category']
-                         })
-            conn.execute(lookups_insert_command,
-                         {
-                          'id': row['lookups_id'],
-                          'word_key': row['word_id'],
-                          'usage': row['usage']
-                         })
-    return array
-
 
 def createTxtFile(txt_name):
     """
@@ -160,66 +70,6 @@ class TestLingualeo(unittest.TestCase):
         'xp_min_points': 0,
         'xp_points': 0,
         'xp_title': 'Ловкий новичок'}
-    TEST_ADD_INFO = {'added_translate_count': 0,
-                     'error_msg': '',
-                     'from_syntrans_id': None,
-                     'is_new': 0,
-                     'is_user_word_created': 0,
-                     'lang': {'current': 'ru', 'target': 'en'},
-                     'lemmas': [{'lemma_id': 5756,
-                     'lemma_value': 'BOOK',
-                     'speech_part': {
-                        'code': 'Adjective',
-                        'name': 'прилагательное',
-                        'short_name': 'прил.'
-                        },
-                    'speech_part_id': 1},
-                    {
-                        'lemma_id': 5756,
-                        'lemma_value': 'BOOK',
-                        'speech_part': {
-                            'code': 'Noun',
-                            'name': 'существительное',
-                            'short_name': 'сущ.'
-                            },
-                    'speech_part_id': 7},
-                    {
-                        'lemma_id': 5756,
-                        'lemma_value': 'BOOK',
-                        'speech_part': {
-                            'code': 'Verb',
-                            'name': 'глагол',
-                            'short_name': 'глаг.'
-                            },
-                    'speech_part_id': 12}],
-                    'sound_url': 'http://d2x1jgnvxlnz25.'\
-                                 'cloudfront.net/v2/3/5756-631152008.mp3',
-                    'speech_part_id': 0,
-                    'to_syntrans_id': None,
-                    'translate_auto': 0,
-                    'translate_id': 201656,
-                    'translate_value': 'книга',
-                    'word_id': 5756,
-                    'word_rank': 320125,
-                    'word_speech_parts': {
-                        '1': {
-                            'code': 'Adjective',
-                            'name': 'прилагательное',
-                            'short_name': 'прил.'
-                            },
-                        '12': {
-                            'code': 'Verb',
-                            'name': 'глагол',
-                            'short_name': 'глаг.'
-                            },
-                        '7': {
-                            'code': 'Noun',
-                            'name': 'существительное',
-                            'short_name': 'сущ.'}},
-                    'word_top': 1,
-                    'word_type': 1,
-                    'word_user_cdate': 1455914074,
-                    'word_value': 'book'}
 
     TEST_WORD_EXISTS = "book"
     TEST_TWORD_EXISTS = "книга"
