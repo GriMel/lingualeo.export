@@ -74,7 +74,7 @@ class Text(Base):
         """
         with open(self.source, "r") as f:
             for line in f:
-                self.data.append({'word': line})
+                self.data.append({'word': line.rstrip('\n')})
 
 
 class Input(Base):
