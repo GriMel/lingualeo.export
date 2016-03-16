@@ -227,6 +227,8 @@ class TestMainWindow(BaseTest):
             os.remove(TEST_TXT)
         if os.path.exists(TEST_SRC):
             os.remove(TEST_SRC)
+        if os.path.exists(REPAIR_DB):
+            os.remove(REPAIR_DB)
 
     def test_only_input_checked(self):
         """
@@ -240,16 +242,16 @@ class TestMainWindow(BaseTest):
         """
         All_words and new_words should be disabled
         """
-        self.assertEqual(self.ui.all_words_radio.isEnabled(), False)
-        self.assertEqual(self.ui.new_words_radio.isEnabled(), False)
+        self.assertEqual(self.ui.kindle_all_words_radio.isEnabled(), False)
+        self.assertEqual(self.ui.kindle_new_words_radio.isEnabled(), False)
 
     def test_kindle_radio_only_one_checked(self):
         """
         Checking new_words should uncheck all_words
         """
         self.ui.kindle_radio.setChecked(True)
-        self.ui.new_words_radio.setChecked(True)
-        self.assertEqual(self.ui.all_words_radio.isChecked(), False)
+        self.ui.kindle_new_words_radio.setChecked(True)
+        self.assertEqual(self.ui.kindle_all_words_radio.isChecked(), False)
 
     def test_input_validator(self):
         """
@@ -271,16 +273,6 @@ class TestMainWindow(BaseTest):
         leftMouseClick(self.ui.export_button)
         self.assertEqual(self.ui.status_bar.currentMessage(),
                          "Email or password are incorrect")
-
-    def test_dialog_not_run(self):
-        """
-        Nothing is selected - ExportDialog shouldn't be constructed.
-        """
-        self.ui.email_edit.setText("")
-        self.ui.pass_edit.setText("")
-        leftMouseClick(self.ui.export_button)
-        with self.assertRaises(AttributeError):
-            self.ui.dialog
 
     def test_input_not_run(self):
         """
@@ -353,7 +345,7 @@ class TestMainWindow(BaseTest):
         """
         Table WORDS in Kindle database is empty - show an error in statusbar
         """
-        createSqlBase(empty=True)
+        createSqlBase()
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
         leftMouseClick(self.ui.export_button)
@@ -364,7 +356,8 @@ class TestMainWindow(BaseTest):
         """
         Kindle database malformed - show 'Repair' and error in statusbar.
         """
-        createSqlBase(malformed=True)
+        array = ['tast', 'test', 'tist']
+        createSqlBase(malformed=True, array=array, new=3)
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
         leftMouseClick(self.ui.export_button)
@@ -372,14 +365,33 @@ class TestMainWindow(BaseTest):
         self.assertEqual(self.ui.status_bar.currentMessage(),
                          "Database is malformed. Click 'Repair'")
 
+    def test_kindle_repair_tool(self):
+        """
+        Repaired database is accessable
+        New name is set to Kindle's path
+        """
+        array = ['tast', 'test', 'tist']
+        createSqlBase(malformed=True, array=array, new=3)
+        self.ui.kindle_radio.setChecked(True)
+        self.ui.kindle_path.setText(TEST_DB)
+        leftMouseClick(self.ui.export_button)
+        timer = createTimer(self.ui.notif)
+        timer.start(10)
+        leftMouseClick(self.ui.repair_button)
+        self.assertIn("Repair was", self.ui.notif.text_label.text())
+        self.assertIn(REPAIR_DB, self.ui.kindle_path.text())
+        self.assertTrue(self.ui.repair_button.isHidden())
+
     def test_lingualeo_no_connection(self):
         """
         No connection - statusbar shows an error
         """
+        timeout = Lingualeo.TIMEOUT
         Lingualeo.TIMEOUT = 0.01
         self.ui.input_word_edit.setText("test")
         leftMouseClick(self.ui.export_button)
         self.assertEqual(self.ui.status_bar.currentMessage(), "No connection")
+        Lingualeo.TIMEOUT = timeout
 
     def test_lingualeo_no_meatballs(self):
         """
@@ -388,6 +400,7 @@ class TestMainWindow(BaseTest):
         self.ui.input_word_edit.setText("test")
         # we use 200 as zero just for test
         Lingualeo.NO_MEATBALLS = 200
+        Lingualeo.PREMIUM = 0
         leftMouseClick(self.ui.export_button)
         self.assertEqual(self.ui.status_bar.currentMessage(), "No meatballs")
 
@@ -408,10 +421,12 @@ class TestMainWindow(BaseTest):
         """
         On close event triggered 'AreYouSure' appears
         """
+        timer = QtCore.QTimer()
+        timer.timeout.connect(self.ui.close_window.close)
+        timer.start(10)
         self.ui.close()
         self.assertIn("Are you", self.ui.close_window.sure_label.text())
         self.assertFalse(self.ui.close_window.check_item.isChecked())
-        leftMouseClick(self.ui.close_window.yes_button)
 
     def test_load_defaults(self):
         """
@@ -444,8 +459,7 @@ class TestMainWindow(BaseTest):
         self.assertEqual(password, new_password)
 
 
-
-class TestExportDialog(BaseTest):
+class TestExportDialog(TestMainWindow):
     """
     Class for testing ExportDialog
     """
@@ -456,7 +470,6 @@ class TestExportDialog(BaseTest):
         -special lingualeo user
         """
         super(TestExportDialog, self).setUp()
-        self.lingualeo = Lingualeo("aaa@mail.com", "12345")
 
     def tearDown(self):
         """
@@ -471,17 +484,100 @@ class TestExportDialog(BaseTest):
 
     def test_export_kindle_premium(self):
         """
-        Test for unlimited sign if user is premium
+        User is premium - count of meatballs is ∞
         """
-        createSqlBase()
-        handler = Kindle(TEST_DB)
-        array = handler.get()
-        duplicates = 0
+        array = ['test']
+        createSqlBase(array=array, new=0)
+        self.ui.kindle_path.setText(TEST_DB)
+        self.ui.kindle_radio.setChecked(True)
+        Lingualeo.PREMIUM = 1
+        timer_1 = createTimer(self.ui.dialog)
+        timer_2 = createTimer(self.ui.dialog.stat_window)
+        timer_1.start(10)
+        timer_2.start(12)
+        leftMouseClick(self.ui.export_button)
+        self.assertEqual("∞", self.ui.dialog.meatballs_value_label.text())
+
+    def test_good_input_export_run(self):
+        """
+        Word 'test' passed to Input - ExportDialog is shown
+        """
+        self.ui.input_word_edit.setText('test')
+        timer_1 = createTimer(self.ui.dialog)
+        timer_2 = createTimer(self.ui.dialog.stat_window)
+        timer_1.start(10)
+        timer_2.start(12)
+        leftMouseClick(self.ui.export_button)
+        self.assertEqual("1", self.ui.dialog.total_words_value_label.text())
+
+    def test_good_text_export_run(self):
+        """
+        Valid text file selected - ExportDialog is shown
+        """
+        duplicates = 2
+        array = ['test'] + ['test']*duplicates
         total = len(array)
-        self.lingualeo.auth_info = createLingualeoUser(premium=True)
-        self.lingualeo.initUser()
-        dialog = ExportDialog(array, total, duplicates, self.lingualeo)
-        self.assertEqual("∞", dialog.meatballs_value_label.text())
+        prepared = total - duplicates
+        createTxtFile(array=array)
+        self.ui.text_radio.setChecked(True)
+        self.ui.text_path.setText(TEST_TXT)
+        timer_1 = createTimer(self.ui.dialog)
+        timer_2 = createTimer(self.ui.dialog.stat_window)
+        timer_1.start(10)
+        timer_2.start(12)
+        leftMouseClick(self.ui.export_button)
+        self.assertEqual(str(total),
+                         self.ui.dialog.total_words_value_label.text())
+        self.assertEqual(str(prepared),
+                         self.ui.dialog.prepared_words_value_label.text())
+        self.assertEqual(str(duplicates),
+                         self.ui.dialog.duplicate_words_value_label.text())
+
+    def test_good_kindle_all_words_export_run(self):
+        """
+        Valid Kindle + all words - ExportDialog shows all words
+        """
+        new = 3
+        duplicates = 0
+        array = ['tast', 'test', 'tist', 'tost']
+        total = len(array)
+        createSqlBase(array=array, new=new)
+        self.ui.kindle_radio.setChecked(True)
+        self.ui.kindle_path.setText(TEST_DB)
+        timer_1 = createTimer(self.ui.dialog)
+        timer_2 = createTimer(self.ui.dialog.stat_window)
+        timer_1.start(10)
+        timer_2.start(12)
+        leftMouseClick(self.ui.export_button)
+        self.assertEqual(str(total),
+                         self.ui.dialog.total_words_value_label.text())
+        self.assertEqual(str(duplicates),
+                         self.ui.dialog.duplicate_words_value_label.text())
+        self.assertEqual(str(total),
+                         self.ui.dialog.prepared_words_value_label.text())
+
+    def test_good_kindle_only_new_words_export_run(self):
+        """
+        Valid Kindle + only new words - ExportDialog shows only new words
+        """
+        new = 3
+        duplicates = 0
+        array = ['tast', 'test', 'tist', 'tost']
+        createSqlBase(array=array, new=new)
+        self.ui.kindle_radio.setChecked(True)
+        self.ui.kindle_new_words_radio.setChecked(True)
+        self.ui.kindle_path.setText(TEST_DB)
+        timer_1 = createTimer(self.ui.dialog)
+        timer_2 = createTimer(self.ui.dialog.stat_window)
+        timer_1.start(10)
+        timer_2.start(12)
+        leftMouseClick(self.ui.export_button)
+        self.assertEqual(str(new),
+                         self.ui.dialog.total_words_value_label.text())
+        self.assertEqual(str(duplicates),
+                         self.ui.dialog.duplicate_words_value_label.text())
+        self.assertEqual(str(new),
+                         self.ui.dialog.prepared_words_value_label.text())
 
 
 class TestStatisticsDialog(BaseTest, Results):
@@ -514,7 +610,8 @@ class TestStatisticsDialog(BaseTest, Results):
                 }
             self.array.append(row)
         super(TestStatisticsDialog, self).setUp()
-        self.stat_dialog = StatisticsDialog(self.array)
+        self.stat_dialog = StatisticsDialog()
+        self.stat_dialog.setVariables(self.array)
 
     def test_correct_counts(self):
         """
@@ -604,15 +701,16 @@ class TestNotificationDialog(BaseTest):
         """
         super(TestNotificationDialog, self).setUp()
         self.title = "Warning!"
-        self.main_text = "Something happened"
-        self.ui = NotificationDialog(self.title, self.main_text)
+        self.text = "Something happened"
+        self.ui = NotificationDialog()
+        self.ui.setVariables(title=self.title, text=self.text)
 
     def test_correct_title_and_text(self):
         """
         Texts passed to constructor should be correct in GUI
         """
         self.assertEqual(self.ui.windowTitle(), self.title)
-        self.assertEqual(self.ui.text_label.text(), self.main_text)
+        self.assertEqual(self.ui.text_label.text(), self.text)
 
 if __name__ == "__main__":
     unittest.main()
