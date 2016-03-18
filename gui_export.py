@@ -193,18 +193,30 @@ class AboutDialog(CustomDialog):
 
 class AreYouSure(CustomDialog):
     """
-    Exit prompt dialog
+    Prompt dialog
     Are you sure? Yes/No
     """
     ICON_FILE = os.path.join("src", "pics", "exit.ico")
-    saved = QtCore.pyqtSignal(bool)
+    checked = QtCore.pyqtSignal(bool)
 
     def __init__(self):
         """
         Initializing AreYouSure.
         """
         super(AreYouSure, self).__init__()
+        self.sure_text = None
+        self.check_text = None
+        self.connect_yes = None
         self.initUI()
+
+    def setVariables(self, sure_text, check_text=None,
+                     connect_yes=None):
+        """
+        Set variables and actions for AreYouSure
+        """
+        self.sure_text = sure_text
+        self.check_text = check_text
+        self.connect_yes = connect_yes
         self.retranslateUI()
         self.initActions()
 
@@ -219,10 +231,12 @@ class AreYouSure(CustomDialog):
         self.sure_label = QtGui.QLabel()
         self.sure_label.setAlignment(QtCore.Qt.AlignCenter)
         self.check_item = QtGui.QCheckBox()
+        self.check_item.hide()
         self.yes_button = QtGui.QPushButton()
         self.no_button = QtGui.QPushButton()
-        hor_lay.addWidget(self.yes_button)
+        self.no_button.setFocus()
         hor_lay.addWidget(self.no_button)
+        hor_lay.addWidget(self.yes_button)
         layout.addWidget(self.check_item)
         layout.addWidget(self.sure_label)
         layout.addLayout(hor_lay)
@@ -234,16 +248,20 @@ class AreYouSure(CustomDialog):
         """
         self.setWindowTitle(self.tr("Exit"))
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
-        self.sure_label.setText(self.tr("Are you sure to quit?"))
+        self.sure_label.setText(self.sure_text)
         self.yes_button.setText(self.tr("Yes"))
         self.no_button.setText(self.tr("No"))
-        self.check_item.setText(self.tr("Save e-mail/password"))
+        if self.check_text:
+            self.check_item.setText(self.check_text)
+            self.check_item.show()
+            self.yes_button.clicked.connect(self.checkedEvent)
 
-    def exit(self):
-        """handle correct exit"""
-        save_email = self.check_item.isChecked()
-        self.saved.emit(save_email)
-        QtGui.QApplication.quit()
+    def checkedEvent(self):
+        """
+        Handle check situation
+        """
+        is_checked = self.check_item.isChecked()
+        self.checked.emit(is_checked)
 
     def initActions(self):
         """
@@ -251,7 +269,9 @@ class AreYouSure(CustomDialog):
         Yes - save email/pass
         No - close AreYouSure
         """
-        self.yes_button.clicked.connect(self.exit)
+        self.yes_button.clicked.connect(self.close)
+        if self.connect_yes:
+            self.yes_button.clicked.connect(self.connect_yes)
         self.no_button.clicked.connect(self.close)
 
 
@@ -273,6 +293,7 @@ class NotificationDialog(CustomDialog):
         super(NotificationDialog, self).__init__()
         self.title = None
         self.text = None
+        self.initUI()
 
     def setVariables(self, title, text):
         """
@@ -280,7 +301,6 @@ class NotificationDialog(CustomDialog):
         """
         self.title = title
         self.text = text
-        self.initUI()
         self.retranslateUI()
         self.initActions()
 
@@ -347,9 +367,9 @@ class MainWindow(QtGui.QMainWindow):
         self.dialog = ExportDialog()
         self.dialog.closed.connect(self.clearMessage)
         self.close_window = AreYouSure()
-        self.close_window.saved.connect(self.saveDefaults)
+        self.close_window.checked.connect(self.saveDefaults)
+        self.truncate_sure_window = AreYouSure()
         self.notif = NotificationDialog()
-        self.logger = setLogger(name='MainWindow')
         self.initUI()
         self.loadDefaults()
         self.loadTranslation()
@@ -357,6 +377,7 @@ class MainWindow(QtGui.QMainWindow):
         self.checkState()
         self.initActions()
         self.setValidators()
+        self.logger = setLogger(name='MainWindow')
         self.logger.debug("Inited MainWindow")
 
     def createMenuBar(self):
@@ -390,6 +411,7 @@ class MainWindow(QtGui.QMainWindow):
         Construct block for email/password
         """
         self.auth_label = QtGui.QLabel()
+        self.auth_label.setAlignment(QtCore.Qt.AlignCenter)
         self.email_label = QtGui.QLabel()
         self.email_edit = QtGui.QLineEdit()
         self.email_edit.setObjectName('email')
@@ -399,10 +421,11 @@ class MainWindow(QtGui.QMainWindow):
         self.pass_edit.setObjectName('pass')
 
         auth_layout = QtGui.QGridLayout()
-        auth_layout.addWidget(self.email_label, 0, 0, 1, 1)
-        auth_layout.addWidget(self.email_edit, 0, 1, 1, 1)
-        auth_layout.addWidget(self.pass_label, 1, 0, 1, 1)
-        auth_layout.addWidget(self.pass_edit, 1, 1, 1, 1)
+        auth_layout.addWidget(self.auth_label, 0, 0, 1, 2)
+        auth_layout.addWidget(self.email_label, 1, 0, 1, 1)
+        auth_layout.addWidget(self.email_edit, 1, 1, 1, 1)
+        auth_layout.addWidget(self.pass_label, 2, 0, 1, 1)
+        auth_layout.addWidget(self.pass_edit, 2, 1, 1, 1)
 
         return auth_layout
 
@@ -458,11 +481,16 @@ class MainWindow(QtGui.QMainWindow):
         self.words_radio_group = QtGui.QButtonGroup()
         self.words_radio_group.addButton(self.kindle_all_words_radio)
         self.words_radio_group.addButton(self.kindle_new_words_radio)
+        self.kindle_truncate_button = QtGui.QPushButton()
+        self.kindle_repair_button = QtGui.QPushButton()
+        self.kindle_repair_button.hide()
         kindle_layout = QtGui.QGridLayout()
-        kindle_layout.addWidget(self.kindle_button, 0, 0)
-        kindle_layout.addWidget(self.kindle_path, 0, 1)
-        kindle_layout.addWidget(self.kindle_all_words_radio, 1, 0, 1, 0)
-        kindle_layout.addWidget(self.kindle_new_words_radio, 2, 0, 1, 0)
+        kindle_layout.addWidget(self.kindle_button, 0, 0, 1, 1)
+        kindle_layout.addWidget(self.kindle_path, 0, 1, 1, 1)
+        kindle_layout.addWidget(self.kindle_all_words_radio, 1, 0, 1, 2)
+        kindle_layout.addWidget(self.kindle_new_words_radio, 2, 0, 1, 2)
+        kindle_layout.addWidget(self.kindle_truncate_button, 3, 0, 1, 2)
+        kindle_layout.addWidget(self.kindle_repair_button, 4, 0, 1, 2)
 
         return kindle_layout
 
@@ -482,15 +510,8 @@ class MainWindow(QtGui.QMainWindow):
         self.kindle_layout = self.createKindleBlock()
 
         self.export_button = QtGui.QPushButton()
-        self.kindle_truncate_button = QtGui.QPushButton()
-        self.kindle_truncate_button.setEnabled(False)
-        self.repair_button = QtGui.QPushButton()
-        self.repair_button.hide()
         self.bottom_layout = QtGui.QHBoxLayout()
         self.bottom_layout.addWidget(self.export_button)
-        self.bottom_layout.addWidget(self.kindle_truncate_button)
-
-        self.bottom_layout.addWidget(self.repair_button)
 
         self.source_group = QtGui.QButtonGroup()
         self.source_group.addButton(self.input_radio)
@@ -530,39 +551,53 @@ class MainWindow(QtGui.QMainWindow):
         """
         self.setWindowTitle(self.tr("Kindleo"))
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
-        self.email_label.setText("e-mail")
-        self.pass_label.setText("password")
+        self.auth_label.setText(self.tr("Enter your Lingualeo email/password"))
+        self.auth_label.setStyleSheet("font-weight:bold")
+        self.email_label.setText(self.tr("e-mail"))
+        self.pass_label.setText(self.tr("password"))
         self.main_label.setText(self.tr("Choose the source"))
+        self.main_label.setStyleSheet("font-weight:bold")
         self.input_radio.setText(self.tr("Input"))
-        self.input_radio.setStyleSheet("font-weight:bold")
+        self.input_radio.setStyleSheet("text-decoration:underline")
         self.input_word_label.setText(self.tr("word"))
         self.input_context_label.setText(self.tr("context"))
 
         self.text_radio.setText(self.tr("Text"))
-        self.text_radio.setStyleSheet("font-weight:bold")
+        self.text_radio.setStyleSheet("text-decoration:underline")
         self.text_button.setText(self.tr("Path"))
 
         self.kindle_radio.setText(self.tr("Kindle"))
-        self.kindle_radio.setStyleSheet("font-weight:bold")
+        self.kindle_radio.setStyleSheet("text-decoration:underline")
 
         self.kindle_hint.setText(self.tr(
             "Base is here:<br>{}".format(self.VOCAB_PATH)))
-        self.kindle_all_words_radio.setText(self.tr("All words (recommended)"))
-        self.kindle_new_words_radio.setText(self.tr("Only new"))
-        self.kindle_new_words_radio.setToolTip(self.tr("Words, marked for learning"))
-        self.kindle_button.setText(self.tr("Path"))
-
-        self.export_button.setText(self.tr("Export"))
-        self.kindle_truncate_button.setText(self.tr("Truncate"))
-        self.repair_button.setText(self.tr("Repair"))
+        self.kindle_all_words_radio.setText(self.tr(
+            "All words (recommended)"))
+        self.kindle_new_words_radio.setText(self.tr(
+            "Only new"))
+        self.kindle_new_words_radio.setToolTip(self.tr(
+            "Words, marked for learning"))
+        self.kindle_button.setText(self.tr(
+            "Path"))
+        self.export_button.setText(self.tr(
+            "GO!"))
+        self.kindle_truncate_button.setText(self.tr(
+            "Truncate"))
+        self.kindle_repair_button.setText(self.tr(
+            "Repair"))
 
         # retranslate menu
-        self.main_menu.setTitle(self.tr("Main menu"))
-        self.language_menu.setTitle(self.tr("Language"))
-        self.exit_action.setText(self.tr("Exit"))
+        self.main_menu.setTitle(self.tr(
+            "Main menu"))
+        self.language_menu.setTitle(self.tr(
+            "Language"))
+        self.exit_action.setText(self.tr(
+            "Exit"))
 
-        self.help_menu.setTitle(self.tr("Help"))
-        self.about_action.setText(self.tr("About"))
+        self.help_menu.setTitle(self.tr(
+            "Help"))
+        self.about_action.setText(self.tr(
+            "About"))
 
         self.setFixedHeight(self.sizeHint().height())
 
@@ -716,7 +751,7 @@ class MainWindow(QtGui.QMainWindow):
             self.status_bar.showMessage(
                 self.tr("Database is malformed. Click 'Repair'"))
             self.logger.debug("%s is malformed", path)
-            self.repair_button.show()
+            self.kindle_repair_button.show()
             return False
         # database is empty
         if not data:
@@ -780,7 +815,7 @@ class MainWindow(QtGui.QMainWindow):
         # 2) hide repair button
         # 3) set new file path
         os.remove(temp_sql)
-        self.repair_button.hide()
+        self.kindle_repair_button.hide()
         self.kindle_path.setText(new_name)
         self.status_bar.showMessage(self.tr(
             "Ready to export."))
@@ -875,49 +910,37 @@ class MainWindow(QtGui.QMainWindow):
                                  self.lingualeo)
         self.dialog.exec_()
 
+    def kindleTruncateEvent(self):
+        """
+        What to do when Truncate button is triggered
+        Show warning dialog
+        """
+        if not self.kindleOk():
+            self.logger.debug("Truncate not OK - %s", self.file_name)
+            return
+        sure_window = AreYouSure()
+        sure_text = self.tr("Are you sure to truncate?")
+        sure_window.setVariables(sure_text=sure_text,
+                                 connect_yes=self.kindleTruncate)
+        sure_window.exec_()
+
     def kindleTruncate(self):
         """
         Truncate Kindle database
         Clear WORDS and LOOKUPS tables
         """
         self.file_name = self.kindle_path.text()
-        if not self.file_name:
-            self.status_bar.showMessage(self.tr("No Kindle database"))
-            self.logger.debug("Truncate not OK - %s", self.file_name)
-            return
-        if not self.kindleOk():
-            self.logger.debug("Truncate not OK - %s", self.file_name)
-            return
-
-        # Show warning dialog
-        # @FROZEN - needs testing
-        # title = self.tr("Warning")
-        # text = self.tr("Before truncating turn Wi-Fi on your Kindle off.")
-        # warning = NotificationDialog(title=title,
-        #                             text=text)
-        # warning.exec_()
-
-        # Show additional prompt
-        reply = QtGui.QMessageBox.question(
-                    self, 'Message', 'Are you sure to truncate?',
-                    QtGui.QMessageBox.Yes | QtGui.QMessageBox.No,
-                    QtGui.QMessageBox.No)
-        if reply == QtGui.QMessageBox.Yes:
-            conn = sqlite3.connect(self.file_name)
-            with conn:
-                conn.execute("DELETE FROM WORDS;")
-                conn.execute("DELETE FROM LOOKUPS;")
-                conn.execute("VACUUM;")
-                # @FROZEN - for future tests
-                # Seems, METADATA shouldn't be altered
-                # conn.execute("UPDATE METADATA SET sscnt = 0\
-                #     WHERE id in ('WORDS', 'LOOKUPS');")
-                #
-            self.status_bar.showMessage(self.tr("Kindle database is empty"))
-            self.logger.debug("Truncate success - %s", self.file_name)
-        else:
-            self.logger.debug("Truncate cancelled")
-            return
+        with sqlite3.connect(self.file_name) as conn:
+            conn.execute("DELETE FROM WORDS;")
+            conn.execute("DELETE FROM LOOKUPS;")
+            conn.execute("VACUUM;")
+            # @FROZEN - for future tests
+            # Seems, METADATA shouldn't be altered
+            # conn.execute("UPDATE METADATA SET sscnt = 0\
+            #     WHERE id in ('WORDS', 'LOOKUPS');")
+            #
+        self.status_bar.showMessage(self.tr("Kindle database is empty"))
+        self.logger.debug("Truncate success - %s", self.file_name)
 
     def setPath(self):
         """
@@ -928,8 +951,10 @@ class MainWindow(QtGui.QMainWindow):
             self.kindle_path.setText(name)
         else:
             self.text_path.setText(name)
-        if not self.repair_button.isHidden():
-            self.repair_button.hide()
+        # Every time, we select a new file
+        # Kindle's "Repair" button should be hidden
+        if not self.kindle_repair_button.isHidden():
+            self.kindle_repair_button.hide()
         self.clearMessage()
         self.logger.debug("Selected %s file", name)
 
@@ -945,12 +970,12 @@ class MainWindow(QtGui.QMainWindow):
         """
         Init all clicks for MainWindow
         """
-        self.input_radio.clicked.connect(self.checkState)
-        self.text_radio.clicked.connect(self.checkState)
-        self.kindle_radio.clicked.connect(self.checkState)
+        self.input_radio.toggled.connect(self.checkState)
+        self.text_radio.toggled.connect(self.checkState)
+        self.kindle_radio.toggled.connect(self.checkState)
         self.export_button.clicked.connect(self.exportWords)
-        self.kindle_truncate_button.clicked.connect(self.kindleTruncate)
-        self.repair_button.clicked.connect(self.kindleRepairDatabase)
+        self.kindle_truncate_button.clicked.connect(self.kindleTruncateEvent)
+        self.kindle_repair_button.clicked.connect(self.kindleRepairDatabase)
         self.kindle_button.clicked.connect(self.setPath)
         self.text_button.clicked.connect(self.setPath)
         # actions for menu
@@ -989,6 +1014,7 @@ class MainWindow(QtGui.QMainWindow):
             self.settings.setValue("password", self.pass_edit.text())
         if self.language:
             self.settings.setValue("language", self.language)
+        QtGui.QApplication.quit()
 
     def loadDefaults(self):
         """
@@ -1016,6 +1042,10 @@ class MainWindow(QtGui.QMainWindow):
         - show Are you Sure
         - save defaults
         """
+        sure_text = self.tr("Are you sure to quit?")
+        check_text = self.tr("Save email/password")
+        self.close_window.setVariables(sure_text=sure_text,
+                                       check_text=check_text)
         self.close_window.exec_()
         event.ignore()
 
@@ -1152,6 +1182,7 @@ class ExportDialog(CustomDialog, Results):
         self.stat = []
         self.stat_window = StatisticsDialog()
         self.value = 0
+        self.initUI()
         self.logger = setLogger(name='Export')
         self.logger.debug("Inited ExportDialog")
 
@@ -1166,7 +1197,6 @@ class ExportDialog(CustomDialog, Results):
         self.lingualeo = lingualeo
         self.task = WorkThread(lingualeo)
         self.task.getData(array)
-        self.initUI()
         self.retranslateUI()
         self.initActions()
 
@@ -1219,7 +1249,6 @@ class ExportDialog(CustomDialog, Results):
         progress_layout = QtGui.QVBoxLayout()
         hor_layout = QtGui.QHBoxLayout()
         self.progress_bar = QtGui.QProgressBar(self)
-        self.progress_bar.setRange(0, self.words_count)
         self.progress_bar.setAlignment(QtCore.Qt.AlignCenter)
         self.start_button = QtGui.QPushButton()
         self.start_button.setObjectName("start")
@@ -1249,6 +1278,7 @@ class ExportDialog(CustomDialog, Results):
         avatar.loadFromData(self.lingualeo.avatar)
         self.avatar_label.setPixmap(avatar)
         self.avatar_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.progress_bar.setRange(0, self.words_count)
         # self.avatar_label.setScaledContents(True)
 
         # INFO GRID
@@ -1418,28 +1448,20 @@ class StatisticsDialog(CustomFullDialog, Results):
          "context": context}
         """
         super(StatisticsDialog, self).__init__()
-        self.logger = setLogger(name="Statistics")
         self.colors = []
         self.texts = []
         self.values = []
         self.stat = None
+        self.initUI()
+        self.logger = setLogger(name="Statistics")
         self.logger.debug("Inited Statistics")
 
     def setVariables(self, stat):
         """
         Init variables for StatisticsDialog
         """
-        self.stat = stat
-        self.initUI()
-        self.retranslateUI()
-
-    def initUI(self):
-        """Construct StatisticsDialog GUI"""
-        self.list_view = QtGui.QListWidget()
-        self.table = QtGui.QTableWidget()
-        self.table.setColumnCount(3)
-        stat = sorted(self.stat, key=itemgetter('result'))
-        for item in stat:
+        self.stat = sorted(stat, key=itemgetter('result'))
+        for item in self.stat:
             if item.get("result") == self.RESULTS['ad']:
                 brush = QtCore.Qt.green
             elif item.get("result") == self.RESULTS['no_tr']:
@@ -1459,26 +1481,13 @@ class StatisticsDialog(CustomFullDialog, Results):
             self.table.setItem(row_position, 0, word)
             self.table.setItem(row_position, 1, translate)
             self.table.setItem(row_position, 2, context)
-        self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        self.table.resizeColumnsToContents()
-        header = self.table.horizontalHeader()
-        header.setStretchLastSection(True)
 
-        self.grid = self.createGrid()
-        self.layout = QtGui.QVBoxLayout()
-        self.layout.addLayout(self.grid)
-        self.layout.addWidget(self.table)
-        self.setLayout(self.layout)
-
-    def createGrid(self):
-        """Create grid for info about user/words/etc"""
         total = len(self.stat)
         result = Counter(i["result"] for i in self.stat)
         added = result[self.RESULTS['ad']]
         not_added = result[self.RESULTS['no_ad']]
         wrong = result[self.RESULTS['no_tr']]
         exist = len(self.stat) - (added+not_added) - wrong
-        grid = QtGui.QGridLayout()
 
         data = [
                 {"text": self.tr("Total"),
@@ -1509,11 +1518,26 @@ class StatisticsDialog(CustomFullDialog, Results):
             self.colors.append(color_label)
             self.texts.append(text_label)
             self.values.append(value_label)
-            grid.addWidget(color_label, index, 0)
-            grid.addWidget(text_label, index, 1)
-            grid.addWidget(value_label, index, 2)
+            self.grid.addWidget(color_label, index, 0)
+            self.grid.addWidget(text_label, index, 1)
+            self.grid.addWidget(value_label, index, 2)
+        self.retranslateUI()
 
-        return grid
+    def initUI(self):
+        """Construct StatisticsDialog GUI"""
+        self.list_view = QtGui.QListWidget()
+        self.table = QtGui.QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.table.resizeColumnsToContents()
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(True)
+
+        self.grid = QtGui.QGridLayout()
+        self.layout = QtGui.QVBoxLayout()
+        self.layout.addLayout(self.grid)
+        self.layout.addWidget(self.table)
+        self.setLayout(self.layout)
 
     def resizeEvent(self, event):
         """
