@@ -378,10 +378,32 @@ class TestMainWindow(BaseTest):
         leftMouseClick(self.ui.export_button)
         timer = createTimer(self.ui.notif)
         timer.start(10)
-        leftMouseClick(self.ui.repair_button)
+        leftMouseClick(self.ui.kindle_repair_button)
         self.assertIn("Repair was", self.ui.notif.text_label.text())
         self.assertIn(REPAIR_DB, self.ui.kindle_path.text())
-        self.assertTrue(self.ui.repair_button.isHidden())
+        self.assertTrue(self.ui.kindle_repair_button.isHidden())
+
+    def test_kindle_truncate_empty_not_run(self):
+        """
+        Kindleo refuses to truncate empty Kindle database
+        """
+        createSqlBase()
+        self.ui.kindle_radio.setChecked(True)
+        self.ui.kindle_path.setText(TEST_DB)
+        leftMouseClick(self.ui.kindle_truncate_button)
+        self.assertEqual(self.ui.status_bar.currentMessage(), "Kindle database is empty")
+
+    def test_kindle_truncate_tool(self):
+        """
+        After truncate Kindleo won't let export to start
+        """
+        array = ['tast', 'test', 'tist', 'tost']
+        createSqlBase(array=array, new=1)
+        self.ui.kindle_radio.setChecked(True)
+        self.ui.kindle_path.setText(TEST_DB)
+        timer = createTimer(self.ui.truncate_sure_window.yes_button)
+        timer.start(100)
+        leftMouseClick(self.ui.kindle_truncate_button)
 
     def test_lingualeo_no_connection(self):
         """
