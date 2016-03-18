@@ -32,44 +32,45 @@ class TestLingualeo(unittest.TestCase):
 
     EMAIL = "b346059@trbvn.com"
     PASSWORD = "1234567890"
-    TEST_AUTH_INFO = {'address': 'Ukraine, Kyyiv, Kiev',
-        'age': 16,
-        'autologin_key': 'd3c12598553e65d50ba52e1abcb5c705',
-        'avatar': 'https://d144fqpiyasmrr.cloudfront.net/up'\
-                  'loads/avatar/0.png',
-        'avatar_mini': 'https://d144fqpiyasmrr.cloudfront.ne'\
-                 't/uploads/avatar/0s100.png',
-        'birth': '2000-01-01',
-        'create_at': '2016-02-19 20:33:54',
-        'daily_hours': 1,
-        'denied_services': [],
-        'fname': '',
-        'fullname': 'b346059',
-        'hungry_max_points': 150,
-        'hungry_pct': 0,
-        'hungry_points': 0,
-        'is_gold': False,
-        'lang_interface': 'ru',
-        'lang_native': 'ru',
-        'langlevel': 1,
-        'leo_pic_url': 'http://d29idiqnj27ux5.cloudfront.net'\
-                       '/8ac94ea62/images/tasks-leo-2.png',
-        'meatballs': 200,
-        'nickname': 'b346059',
-        'port_version': '1.6.1',
-        'premium_type': 0,
-        'premium_until': '',
-        'refcode': '9em5gg',
-        'sex': 1,
-        'sname': '',
-        'user_id': 13720532,
-        'words_cnt': 30,
-        'words_known': 0,
-        'xp_level': 1,
-        'xp_max_points': 25,
-        'xp_min_points': 0,
-        'xp_points': 0,
-        'xp_title': 'Ловкий новичок'}
+    TEST_AUTH_INFO = \
+        {'address': 'Ukraine, Kyyiv, Kiev',
+         'age': 16,
+         'autologin_key': 'd3c12598553e65d50ba52e1abcb5c705',
+         'avatar': 'https://d144fqpiyasmrr.cloudfront.net/up'\
+                   'loads/avatar/0.png',
+         'avatar_mini': 'https://d144fqpiyasmrr.cloudfront.ne'\
+                        't/uploads/avatar/0s100.png',
+         'birth': '2000-01-01',
+         'create_at': '2016-02-19 20:33:54',
+         'daily_hours': 1,
+         'denied_services': [],
+         'fname': '',
+         'fullname': 'b346059',
+         'hungry_max_points': 150,
+         'hungry_pct': 0,
+         'hungry_points': 0,
+         'is_gold': False,
+         'lang_interface': 'ru',
+         'lang_native': 'ru',
+         'langlevel': 1,
+         'leo_pic_url': 'http://d29idiqnj27ux5.cloudfront.net'\
+                        '/8ac94ea62/images/tasks-leo-2.png',
+         'meatballs': 200,
+         'nickname': 'b346059',
+         'port_version': '1.6.1',
+         'premium_type': 0,
+         'premium_until': '',
+         'refcode': '9em5gg',
+         'sex': 1,
+         'sname': '',
+         'user_id': 13720532,
+         'words_cnt': 30,
+         'words_known': 0,
+         'xp_level': 1,
+         'xp_max_points': 25,
+         'xp_min_points': 0,
+         'xp_points': 0,
+         'xp_title': 'Ловкий новичок'}
 
     TEST_WORD_EXISTS = "book"
     TEST_TWORD_EXISTS = "книга"
