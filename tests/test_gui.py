@@ -362,7 +362,7 @@ class TestMainWindow(BaseTest):
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
         leftMouseClick(self.ui.export_button)
-        self.assertEqual(self.ui.repair_button.isHidden(), False)
+        self.assertEqual(self.ui.kindle_repair_button.isHidden(), False)
         self.assertEqual(self.ui.status_bar.currentMessage(),
                          "Database is malformed. Click 'Repair'")
 
@@ -405,18 +405,13 @@ class TestMainWindow(BaseTest):
         leftMouseClick(self.ui.export_button)
         self.assertEqual(self.ui.status_bar.currentMessage(), "No meatballs")
 
-    def test_run_export(self):
-        """
-        Email/password set, set word in 'Input' - ExportDialog appears
-        """
-
     def test_russian_translation(self):
         """
         Selecting RU from Language menu - russian translation is loaded
         """
         lang_item = self.ui.language_menu.actions()[1]
         lang_item.trigger()
-        self.assertEqual(self.ui.export_button.text(), "Экспорт")
+        self.assertEqual(self.ui.export_button.text(), "ПОЕХАЛИ!")
 
     def test_close_event(self):
         """
