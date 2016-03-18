@@ -35,12 +35,13 @@ def leftMouseClick(widget):
     QTest.mouseClick(widget, QtCore.Qt.LeftButton)
 
 
-def createTimer(widget):
+def createTimer(widget, button=None):
     """
     Create timer for closing widgets
     """
+    button = widget.close if not button else button
     timer = QtCore.QTimer()
-    timer.timeout.connect(widget.close)
+    timer.timeout.connect(button)
     return timer
 
 
