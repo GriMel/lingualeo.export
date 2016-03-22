@@ -370,6 +370,7 @@ class MainWindow(QtGui.QMainWindow):
         self.close_window.checked.connect(self.saveDefaults)
         self.truncate_sure_window = AreYouSure()
         self.notif = NotificationDialog()
+        self.about = AboutDialog()
         self.initUI()
         self.loadDefaults()
         self.loadTranslation()
@@ -918,11 +919,11 @@ class MainWindow(QtGui.QMainWindow):
         if not self.kindleOk():
             self.logger.debug("Truncate not OK - %s", self.file_name)
             return
-        sure_window = AreYouSure()
         sure_text = self.tr("Are you sure to truncate?")
-        sure_window.setVariables(sure_text=sure_text,
-                                 connect_yes=self.kindleTruncate)
-        sure_window.exec_()
+        self.truncate_sure_window.setVariables(
+            sure_text=sure_text,
+            connect_yes=self.kindleTruncate)
+        self.truncate_sure_window.exec_()
 
     def kindleTruncate(self):
         """
@@ -958,13 +959,11 @@ class MainWindow(QtGui.QMainWindow):
         self.clearMessage()
         self.logger.debug("Selected %s file", name)
 
-    @staticmethod
-    def showAbout():
+    def showAbout(self):
         """
         Show dialog 'About'
         """
-        about = AboutDialog()
-        about.exec_()
+        self.about.exec_()
 
     def initActions(self):
         """
