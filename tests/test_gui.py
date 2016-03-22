@@ -43,7 +43,7 @@ def createClickTimer(element):
     Create timer for closing widgets
     """
     timer = QtCore.QTimer()
-    if type(element) == QtGui.QPushButton():
+    if type(element) == QtGui.QPushButton:
         action = lambda: leftMouseClick(element)
     else:
         action = element.close
