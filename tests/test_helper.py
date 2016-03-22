@@ -53,7 +53,7 @@ class TestLingualeo(unittest.TestCase):
          'lang_interface': 'ru',
          'lang_native': 'ru',
          'langlevel': 1,
-         'leo_pic_url': 'http://d29idiqnj27ux5.cloudfront.net'\
+         'leo_pic_url': 'http://hwcdn.lingualeo.com' +
                         '/8ac94ea62/images/tasks-leo-2.png',
          'meatballs': 200,
          'nickname': 'b346059',
