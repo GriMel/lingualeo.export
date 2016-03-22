@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# pylint: disable=E731
 """
 ===Description===
 Module for tests
@@ -7,6 +8,8 @@ Module for tests
 Recommended to run with nosetests as:
 nosetests --exe --with-coverage --cover-erase --cover-html
 --cover-package=gui_export.py,service.py,handler.py
+
+E731 - use def instead of lambda. To the hell it.
 """
 
 import unittest
@@ -35,13 +38,16 @@ def leftMouseClick(widget):
     QTest.mouseClick(widget, QtCore.Qt.LeftButton)
 
 
-def createTimer(widget, button=None):
+def createClickTimer(element):
     """
     Create timer for closing widgets
     """
-    button = widget.close if not button else button
     timer = QtCore.QTimer()
-    timer.timeout.connect(button)
+    if type(element) == QtGui.QPushButton():
+        action = lambda: leftMouseClick(element)
+    else:
+        action = element.close
+    timer.timeout.connect(action)
     return timer
 
 
@@ -376,7 +382,7 @@ class TestMainWindow(BaseTest):
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
         leftMouseClick(self.ui.export_button)
-        timer = createTimer(self.ui.notif)
+        timer = createClickTimer(self.ui.notif)
         timer.start(10)
         leftMouseClick(self.ui.kindle_repair_button)
         self.assertIn("Repair was", self.ui.notif.text_label.text())
@@ -391,7 +397,8 @@ class TestMainWindow(BaseTest):
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
         leftMouseClick(self.ui.kindle_truncate_button)
-        self.assertEqual(self.ui.status_bar.currentMessage(), "Kindle database is empty")
+        self.assertEqual(self.ui.status_bar.currentMessage(),
+                         "Kindle database is empty")
 
     def test_kindle_truncate_tool(self):
         """
@@ -401,9 +408,14 @@ class TestMainWindow(BaseTest):
         createSqlBase(array=array, new=1)
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
-        timer = createTimer(self.ui.truncate_sure_window.yes_button)
-        timer.start(100)
+        timer_1 = createClickTimer(self.ui.truncate_sure_window.yes_button)
+        timer_2 = createClickTimer(self.ui.notif.ok_button)
+        timer_1.start(10)
+        timer_2.start(12)
         leftMouseClick(self.ui.kindle_truncate_button)
+        leftMouseClick(self.ui.kindle_truncate_button)
+        self.assertEqual(self.ui.status_bar.currentMessage(),
+                         "Kindle database is empty")
 
     def test_lingualeo_no_connection(self):
         """
@@ -476,6 +488,17 @@ class TestMainWindow(BaseTest):
         self.assertEqual(email, new_email)
         self.assertEqual(password, new_password)
 
+    def test_about_dialog(self):
+        """
+        About dialog has authors name in it
+        """
+        about_item = self.ui.help_menu.actions()[0]
+        timer = createClickTimer(self.ui.about)
+        timer.start(10)
+        about_item.trigger()
+        self.assertEqual("<a href='mailto:GriefMontana@gmail.com'>Send E-mail</a>",
+                         self.ui.about.email_label.text())
+
 
 class TestExportDialog(TestMainWindow):
     """
@@ -509,8 +532,8 @@ class TestExportDialog(TestMainWindow):
         self.ui.kindle_path.setText(TEST_DB)
         self.ui.kindle_radio.setChecked(True)
         Lingualeo.PREMIUM = 1
-        timer_1 = createTimer(self.ui.dialog)
-        timer_2 = createTimer(self.ui.dialog.stat_window)
+        timer_1 = createClickTimer(self.ui.dialog)
+        timer_2 = createClickTimer(self.ui.dialog.stat_window)
         timer_1.start(10)
         timer_2.start(12)
         leftMouseClick(self.ui.export_button)
@@ -521,8 +544,8 @@ class TestExportDialog(TestMainWindow):
         Word 'test' passed to Input - ExportDialog is shown
         """
         self.ui.input_word_edit.setText('test')
-        timer_1 = createTimer(self.ui.dialog)
-        timer_2 = createTimer(self.ui.dialog.stat_window)
+        timer_1 = createClickTimer(self.ui.dialog)
+        timer_2 = createClickTimer(self.ui.dialog.stat_window)
         timer_1.start(10)
         timer_2.start(12)
         leftMouseClick(self.ui.export_button)
@@ -539,8 +562,8 @@ class TestExportDialog(TestMainWindow):
         createTxtFile(array=array)
         self.ui.text_radio.setChecked(True)
         self.ui.text_path.setText(TEST_TXT)
-        timer_1 = createTimer(self.ui.dialog)
-        timer_2 = createTimer(self.ui.dialog.stat_window)
+        timer_1 = createClickTimer(self.ui.dialog)
+        timer_2 = createClickTimer(self.ui.dialog.stat_window)
         timer_1.start(10)
         timer_2.start(12)
         leftMouseClick(self.ui.export_button)
@@ -562,8 +585,8 @@ class TestExportDialog(TestMainWindow):
         createSqlBase(array=array, new=new)
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
-        timer_1 = createTimer(self.ui.dialog)
-        timer_2 = createTimer(self.ui.dialog.stat_window)
+        timer_1 = createClickTimer(self.ui.dialog)
+        timer_2 = createClickTimer(self.ui.dialog.stat_window)
         timer_1.start(10)
         timer_2.start(12)
         leftMouseClick(self.ui.export_button)
@@ -585,8 +608,8 @@ class TestExportDialog(TestMainWindow):
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_new_words_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
-        timer_1 = createTimer(self.ui.dialog)
-        timer_2 = createTimer(self.ui.dialog.stat_window)
+        timer_1 = createClickTimer(self.ui.dialog)
+        timer_2 = createClickTimer(self.ui.dialog.stat_window)
         timer_1.start(10)
         timer_2.start(12)
         leftMouseClick(self.ui.export_button)
