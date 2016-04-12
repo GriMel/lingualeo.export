@@ -208,6 +208,7 @@ class AreYouSure(CustomDialog):
         self.check_text = None
         self.connect_yes = None
         self.initUI()
+        self.initActions()
 
     def setVariables(self, sure_text, check_text=None,
                      connect_yes=None):
@@ -218,7 +219,6 @@ class AreYouSure(CustomDialog):
         self.check_text = check_text
         self.connect_yes = connect_yes
         self.retranslateUI()
-        self.initActions()
 
     def initUI(self):
         """
@@ -294,6 +294,7 @@ class NotificationDialog(CustomDialog):
         self.title = None
         self.text = None
         self.initUI()
+        self.initActions()
 
     def setVariables(self, title, text):
         """
@@ -302,7 +303,6 @@ class NotificationDialog(CustomDialog):
         self.title = title
         self.text = text
         self.retranslateUI()
-        self.initActions()
 
     def initUI(self):
         layout = QtGui.QVBoxLayout()
@@ -457,6 +457,7 @@ class MainWindow(QtGui.QMainWindow):
         self.text_radio = QtGui.QRadioButton()
         self.text_radio.setObjectName("text")
         self.text_button = QtGui.QPushButton()
+        self.text_button.setObjectName("set_text")
         self.text_path = QtGui.QLineEdit()
         self.text_path.setReadOnly(True)
         text_layout = QtGui.QHBoxLayout()
@@ -473,6 +474,7 @@ class MainWindow(QtGui.QMainWindow):
         self.kindle_radio.setObjectName("kindle")
         self.kindle_hint = QtGui.QLabel()
         self.kindle_button = QtGui.QPushButton()
+        self.kindle_button.setObjectName("set_kindle")
         self.kindle_path = QtGui.QLineEdit()
         self.kindle_path.setReadOnly(True)
         self.kindle_words_layout = QtGui.QHBoxLayout()
@@ -856,12 +858,10 @@ class MainWindow(QtGui.QMainWindow):
 
         # Text selected
         elif self.text_radio.isChecked():
-            self.file_name = self.text_path.text()
             if not self.textOk():
                 self.logger.debug("Export refused - Text")
                 return
             self.status_bar.showMessage(self.tr("Txt > Lingualeo"))
-            self.file_name = self.text_path.text()
             handler = Text(self.file_name)
             handler.read()
             self.array = handler.get()
@@ -870,7 +870,6 @@ class MainWindow(QtGui.QMainWindow):
 
         # Kindle selected
         elif self.kindle_radio.isChecked():
-            self.file_name = self.kindle_path.text()
             if not self.kindleOk():
                 self.logger.debug("Export refused - Kindle")
                 return
@@ -947,17 +946,32 @@ class MainWindow(QtGui.QMainWindow):
         """
         Set path either for Kindle or Txt file
         """
-        name = QtGui.QFileDialog.getOpenFileName(self, "Select File", "",)
-        if self.kindle_radio.isChecked():
-            self.kindle_path.setText(name)
-        else:
-            self.text_path.setText(name)
+
+        # dlg = QtGui.QFileDialog(self, caption="Select a file")
+        # dlg.setNameFilters("Text files (*.txt)")
+        # dlg.setOption(QtGui.QFileDialog.DontUseNativeDialog, False)
+        # if (dlg.exec_()):
+        #     name = dlg.selectedFiles()
+        if self.sender().objectName() == "set_text":
+            self.file_name = QtGui.QFileDialog.getOpenFileName(
+                parent=self,
+                caption=self.tr("Select a file"),
+                filter=self.tr("Text files (*.txt)"))
+            self.text_path.setText(self.file_name)
+            self.kindle_path.setText("")
+        elif self.sender().objectName() == "set_kindle":
+            self.file_name = QtGui.QFileDialog(
+                parent=self,
+                caption=self.tr("Select a file"),
+                filter=self.tr("Databases (*.db)"))
+            self.kindle_path.setText(self.file_name)
+            self.text_path.setText("")
         # Every time, we select a new file
         # Kindle's "Repair" button should be hidden
         if not self.kindle_repair_button.isHidden():
             self.kindle_repair_button.hide()
         self.clearMessage()
-        self.logger.debug("Selected %s file", name)
+        self.logger.debug("Selected %s file", self.file_name)
 
     def showAbout(self):
         """
@@ -1066,10 +1080,15 @@ class WorkThread(QtCore.QThread, Results):
     """
     punched = QtCore.pyqtSignal(dict)
 
-    def __init__(self, lingualeo):
+    def __init__(self):
         super(WorkThread, self).__init__()
-        self.lingualeo = lingualeo
         self.logger = setLogger(name='WorkThread')
+
+    def setVariables(self, lingualeo):
+        """
+        Set lingualeo for WorkThread
+        """
+        self.lingualeo = lingualeo
 
     def __del__(self):
         """Delete thread"""
@@ -1172,16 +1191,10 @@ class ExportDialog(CustomDialog, Results):
         -lingualeo API
         """
         super(ExportDialog, self).__init__()
-        self.array = None
-        self.words_count = None
-        self.total = None
-        self.duplicates = None
-        self.lingualeo = None
-        self.task = None
-        self.stat = []
         self.stat_window = StatisticsDialog()
-        self.value = 0
+        self.task = WorkThread()
         self.initUI()
+        self.initActions()
         self.logger = setLogger(name='Export')
         self.logger.debug("Inited ExportDialog")
 
@@ -1189,15 +1202,17 @@ class ExportDialog(CustomDialog, Results):
         """
         Init variables of ExportDialog
         """
+        self.stat = []
+        self.value = 0
         self.array = array
         self.words_count = len(array)
         self.total = total
         self.duplicates = duplicates
         self.lingualeo = lingualeo
-        self.task = WorkThread(lingualeo)
+        self.task.setVariables(lingualeo)
+        self.progress_bar.setValue(0)
         self.task.getData(array)
         self.retranslateUI()
-        self.initActions()
 
     def initUI(self):
         """
@@ -1349,6 +1364,10 @@ class ExportDialog(CustomDialog, Results):
         self.task.stop()
         self.stat_window.setVariables(self.stat)
         self.stat_window.exec_()
+        if self.start_button.isHidden():
+            self.start_button.show()
+            self.start_button.setObjectName("start")
+        self.progress_bar.setFormat("0%")
         self.closed.emit()
 
     def changeTask(self):
@@ -1551,6 +1570,17 @@ class StatisticsDialog(CustomFullDialog, Results):
         """
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
         self.setWindowTitle(self.tr("Statistics"))
+
+    def closeEvent(self, event):
+        """
+        Clean table of StatisticsDialog
+        """
+        self.table.setRowCount(0)
+        while self.grid.count():
+            item = self.grid.takeAt(0)
+            widget = item.widget()
+            widget.deleteLater()
+        event.accept()
 
 
 class ExceptionDialog(QtGui.QDialog):
