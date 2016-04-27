@@ -395,7 +395,7 @@ class MainWindow(QtGui.QMainWindow):
         'nt': os.path.join("src",
                            "sqlite_win",
                            "sqlite3.exe")
-        }
+                  }
 
     def __init__(self):
         """
@@ -1007,7 +1007,7 @@ class MainWindow(QtGui.QMainWindow):
             self.text_path.setText(self.file_name)
             self.kindle_path.setText("")
         elif self.sender().objectName() == "set_kindle":
-            self.file_name = QtGui.QFileDialog(
+            self.file_name = QtGui.QFileDialog.getOpenFileName(
                 parent=self,
                 caption=self.tr("Select a file"),
                 filter=self.tr("Databases (*.db)"))
@@ -1053,7 +1053,7 @@ class MainWindow(QtGui.QMainWindow):
 
         if self.sender():
             self.language = self.sender().objectName()
-        path = os.path.join("src", "lang", "qt_"+self.language)
+        path = os.path.join("src", "lang", "qt_" + self.language)
         # it's important to use 'self' here - don't know why
         self.language_translator.load(path)
         app.installTranslator(self.language_translator)
