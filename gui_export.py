@@ -191,38 +191,29 @@ class AboutDialog(CustomDialog):
         self.email_label.linkActivated.connect(self.openEmail)
 
 
-class AreYouSure(CustomDialog):
+class QuitSure(CustomDialog):
     """
-    Prompt dialog
-    Are you sure? Yes/No
+    Prompt dialog before quitting
+    Are you sure to quit? Yes/No
     """
     ICON_FILE = os.path.join("src", "pics", "exit.ico")
     checked = QtCore.pyqtSignal(bool)
 
     def __init__(self):
         """
-        Initializing AreYouSure.
+        Initialize variables
         """
-        super(AreYouSure, self).__init__()
+        super(QuitSure, self).__init__()
         self.sure_text = None
         self.check_text = None
-        self.connect_yes = None
+        self.title = None
         self.initUI()
         self.initActions()
-
-    def setVariables(self, sure_text, check_text=None,
-                     connect_yes=None):
-        """
-        Set variables and actions for AreYouSure
-        """
-        self.sure_text = sure_text
-        self.check_text = check_text
-        self.connect_yes = connect_yes
         self.retranslateUI()
 
     def initUI(self):
         """
-        Construct AreYouSure GUI
+        Construct UI
         """
         self.setWindowFlags(
             self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
@@ -231,48 +222,107 @@ class AreYouSure(CustomDialog):
         self.sure_label = QtGui.QLabel()
         self.sure_label.setAlignment(QtCore.Qt.AlignCenter)
         self.check_item = QtGui.QCheckBox()
-        self.check_item.hide()
         self.yes_button = QtGui.QPushButton()
         self.no_button = QtGui.QPushButton()
         self.no_button.setFocus()
         hor_lay.addWidget(self.no_button)
         hor_lay.addWidget(self.yes_button)
+        layout.addWidget(self.sure_label)
         layout.addWidget(self.check_item)
+        layout.addLayout(hor_lay)
+        self.setLayout(layout)
+
+    def retranslateUI(self):
+        """
+        Set texts for buttons/labels
+        """
+        self.setWindowTitle(self.title)
+        self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
+        self.sure_label.setText(self.tr("Are you sure to quit?"))
+        self.check_item.setText(self.tr("Save email/password"))
+        self.yes_button.setText(self.tr("Yes"))
+        self.no_button.setText(self.tr("No"))
+
+    def initActions(self):
+        """
+        Init actions for Yes/No buttons
+        """
+        self.no_button.clicked.connect(self.close)
+        self.yes_button.clicked.connect(self.checkedEvent)
+
+    def checkedEvent(self):
+        """
+        Event for checked item
+        """
+        self.checked.emit(self.check_item.isChecked())
+
+
+class KindleTruncateSure(CustomDialog):
+    """
+    Prompt dialog when Kindle's database is going to be truncated
+    """
+    ICON_FILE = os.path.join("src", "pics", "truncate.ico")
+    truncate = QtCore.pyqtSignal()
+
+    def __init__(self):
+        """
+        Init variables
+        """
+        super(KindleTruncateSure, self).__init__()
+        self.sure_text = None
+        self.check_text = None
+        self.title = None
+        self.initUI()
+        self.initActions()
+        self.retranslateUI()
+
+    def setVariables(self, sure_text, title):
+        """
+        Set variables
+        """
+        self.sure_text = sure_text
+        self.title = title
+
+    def initUI(self):
+        """
+        Construct UI
+        """
+        layout = QtGui.QVBoxLayout()
+        hor_lay = QtGui.QHBoxLayout()
+        self.sure_label = QtGui.QLabel()
+        self.sure_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.yes_button = QtGui.QPushButton()
+        self.no_button = QtGui.QPushButton()
+        self.no_button.setFocus()
+        hor_lay.addWidget(self.no_button)
+        hor_lay.addWidget(self.yes_button)
         layout.addWidget(self.sure_label)
         layout.addLayout(hor_lay)
         self.setLayout(layout)
 
     def retranslateUI(self):
         """
-        Set texts for buttons/labels of AreYouSure
+        Set texts for buttons/labels
         """
-        self.setWindowTitle(self.tr("Exit"))
+        self.setWindowTitle(self.title)
         self.setWindowIcon(QtGui.QIcon(self.ICON_FILE))
-        self.sure_label.setText(self.sure_text)
+        self.sure_label.setText(self.tr("Are you sure to truncate database?"))
         self.yes_button.setText(self.tr("Yes"))
         self.no_button.setText(self.tr("No"))
-        if self.check_text:
-            self.check_item.setText(self.check_text)
-            self.check_item.show()
-            self.yes_button.clicked.connect(self.checkedEvent)
-
-    def checkedEvent(self):
-        """
-        Handle check situation
-        """
-        is_checked = self.check_item.isChecked()
-        self.checked.emit(is_checked)
 
     def initActions(self):
         """
-        Actions for Yes/No buttons
-        Yes - save email/pass
-        No - close AreYouSure
+        Init actions for Yes/No buttons
         """
+        self.yes_button.clicked.connect(self.truncateEvent)
         self.yes_button.clicked.connect(self.close)
-        if self.connect_yes:
-            self.yes_button.clicked.connect(self.connect_yes)
         self.no_button.clicked.connect(self.close)
+
+    def truncateEvent(self):
+        """
+
+        """
+        self.truncate.emit()
 
 
 class NotificationDialog(CustomDialog):
@@ -366,9 +416,10 @@ class MainWindow(QtGui.QMainWindow):
         self.lingualeo = None
         self.dialog = ExportDialog()
         self.dialog.closed.connect(self.clearMessage)
-        self.close_window = AreYouSure()
+        self.close_window = QuitSure()
         self.close_window.checked.connect(self.saveDefaults)
-        self.truncate_sure_window = AreYouSure()
+        self.truncate_sure_window = KindleTruncateSure()
+        self.truncate_sure_window.truncate.connect(self.kindleTruncate)
         self.notif = NotificationDialog()
         self.about = AboutDialog()
         self.initUI()
@@ -918,10 +969,6 @@ class MainWindow(QtGui.QMainWindow):
         if not self.kindleOk():
             self.logger.debug("Truncate not OK - %s", self.file_name)
             return
-        sure_text = self.tr("Are you sure to truncate?")
-        self.truncate_sure_window.setVariables(
-            sure_text=sure_text,
-            connect_yes=self.kindleTruncate)
         self.truncate_sure_window.exec_()
 
     def kindleTruncate(self):
@@ -1055,10 +1102,6 @@ class MainWindow(QtGui.QMainWindow):
         - show Are you Sure
         - save defaults
         """
-        sure_text = self.tr("Are you sure to quit?")
-        check_text = self.tr("Save email/password")
-        self.close_window.setVariables(sure_text=sure_text,
-                                       check_text=check_text)
         self.close_window.exec_()
         event.ignore()
 
@@ -1191,6 +1234,13 @@ class ExportDialog(CustomDialog, Results):
         -lingualeo API
         """
         super(ExportDialog, self).__init__()
+        self.stat = None
+        self.value = None
+        self.array = None
+        self.words_count = None
+        self.total = None
+        self.duplicates = None
+        self.lingualeo = None
         self.stat_window = StatisticsDialog()
         self.task = WorkThread()
         self.initUI()
@@ -1211,6 +1261,7 @@ class ExportDialog(CustomDialog, Results):
         self.lingualeo = lingualeo
         self.task.setVariables(lingualeo)
         self.progress_bar.setValue(0)
+        self.progress_bar.setFormat("0%")
         self.task.getData(array)
         self.retranslateUI()
 
@@ -1315,6 +1366,8 @@ class ExportDialog(CustomDialog, Results):
                 self.tr("WARNING: Meatballs < words"))
             self.warning_info_label.setStyleSheet("color:red;font-weight:bold")
             self.warning_info_label.show()
+        elif not self.warning_info_label.isHidden():
+            self.warning_info_label.hide()
         self.total_words_title_label.setText(
             self.tr("Total words:"))
         self.total_words_value_label.setText(
@@ -1479,6 +1532,7 @@ class StatisticsDialog(CustomFullDialog, Results):
         Init variables for StatisticsDialog
         """
         self.stat = sorted(stat, key=itemgetter('result'))
+        self.table.setRowCount(0)
         for item in self.stat:
             if item.get("result") == self.RESULTS['ad']:
                 brush = QtCore.Qt.green
