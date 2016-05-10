@@ -90,7 +90,12 @@ class TestLingualeo(unittest.TestCase):
         """
         Auth_info is equal to test auth info
         """
-        self.assertEqual(self.lingualeo.auth_info, self.TEST_AUTH_INFO)
+        premium_type = self.lingualeo.auth_info['premium_type']
+        fullname = self.lingualeo.auth_info['fullname']
+        xp_level = self.lingualeo.auth_info['xp_level']
+        self.assertEqual(premium_type, self.TEST_AUTH_INFO['premium_type'])
+        self.assertEqual(fullname, self.TEST_AUTH_INFO['fullname'])
+        self.assertEqual(xp_level, self.TEST_AUTH_INFO['xp_level'])
 
     def test_typical_get_translation_info(self):
         """

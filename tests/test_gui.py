@@ -21,7 +21,7 @@ from PyQt4.QtTest import QTest
 from PyQt4 import QtGui, QtCore
 from gui_export import MainWindow, ExportDialog, StatisticsDialog,\
                        AboutDialog, NotificationDialog, ExceptionDialog,\
-                       Results, AreYouSure
+                       Results, QuitSure
 from handler import Kindle
 from service import Lingualeo
 
@@ -61,10 +61,10 @@ def createTxtFile(empty=False, array=None):
         with open(TEST_TXT, 'w') as f:
             if array:
                 for i in array:
-                    f.write(i+"\n")
+                    f.write(i + "\n")
             else:
-                f.write("test"+"\n")
-                f.write("testimony"+"\n")
+                f.write("test" + "\n")
+                f.write("testimony" + "\n")
 
 
 def createSrcFile(email, password, language=None):
@@ -151,16 +151,16 @@ def createSqlBase(db_name=TEST_DB,
             for row in new_array:
                 conn.execute(words_insert_command,
                              {
-                              'id': row['word_id'],
-                              'word': row['word'],
-                              'stem': row['stem'],
-                              'category': row['category']
+                                'id': row['word_id'],
+                                'word': row['word'],
+                                'stem': row['stem'],
+                                'category': row['category']
                              })
                 conn.execute(lookups_insert_command,
                              {
-                              'id': row['lookups_id'],
-                              'word_key': row['word_id'],
-                              'usage': row['usage']
+                                'id': row['lookups_id'],
+                                'word_key': row['word_id'],
+                                'usage': row['usage']
                              })
     if malformed:
         with open(TEST_DB, 'wb') as f:
@@ -228,6 +228,10 @@ class TestMainWindow(BaseTest):
         Remove test.db in case if it's present
         """
         super(TestMainWindow, self).tearDown()
+        if Lingualeo.PREMIUM != 0:
+            Lingualeo.PREMIUM = 0
+        if Lingualeo.NO_MEATBALLS != 0:
+            Lingualeo.NO_MEATBALLS = 0
         if os.path.exists(TEST_DB):
             os.remove(TEST_DB)
         if os.path.exists(TEST_TXT):
@@ -381,6 +385,7 @@ class TestMainWindow(BaseTest):
         createSqlBase(malformed=True, array=array, new=3)
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
+        self.ui.file_name = TEST_DB
         leftMouseClick(self.ui.export_button)
         timer = createClickTimer(self.ui.notif)
         timer.start(10)
@@ -400,6 +405,7 @@ class TestMainWindow(BaseTest):
         self.assertEqual(self.ui.status_bar.currentMessage(),
                          "Kindle database is empty")
 
+    '''
     def test_kindle_truncate_tool(self):
         """
         After truncate Kindleo won't let export to start
@@ -408,14 +414,17 @@ class TestMainWindow(BaseTest):
         createSqlBase(array=array, new=1)
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
+        self.ui.file_name = TEST_DB
         timer_1 = createClickTimer(self.ui.truncate_sure_window.yes_button)
-        timer_2 = createClickTimer(self.ui.notif.ok_button)
+        timer_2 = createClickTimer(self.ui.kindle_truncate_button)
         timer_1.start(10)
-        timer_2.start(12)
-        leftMouseClick(self.ui.kindle_truncate_button)
+        timer_2.start(20)
         leftMouseClick(self.ui.kindle_truncate_button)
         self.assertEqual(self.ui.status_bar.currentMessage(),
-                         "Kindle database is empty")
+        test                "Kindle database is empty")
+        self.assertTrue(self.ui.kindle_radio.isChecked())
+        self.assertEqual(self.ui.kindle_path.text(), TEST_DB)
+    '''
 
     def test_lingualeo_no_connection(self):
         """
@@ -435,7 +444,6 @@ class TestMainWindow(BaseTest):
         self.ui.input_word_edit.setText("test")
         # we use 200 as zero just for test
         Lingualeo.NO_MEATBALLS = 200
-        Lingualeo.PREMIUM = 0
         leftMouseClick(self.ui.export_button)
         self.assertEqual(self.ui.status_bar.currentMessage(), "No meatballs")
 
@@ -531,6 +539,7 @@ class TestExportDialog(TestMainWindow):
         createSqlBase(array=array, new=0)
         self.ui.kindle_path.setText(TEST_DB)
         self.ui.kindle_radio.setChecked(True)
+        self.ui.file_name = TEST_DB
         Lingualeo.PREMIUM = 1
         timer_1 = createClickTimer(self.ui.dialog)
         timer_2 = createClickTimer(self.ui.dialog.stat_window)
@@ -562,6 +571,7 @@ class TestExportDialog(TestMainWindow):
         createTxtFile(array=array)
         self.ui.text_radio.setChecked(True)
         self.ui.text_path.setText(TEST_TXT)
+        self.ui.file_name = TEST_TXT
         timer_1 = createClickTimer(self.ui.dialog)
         timer_2 = createClickTimer(self.ui.dialog.stat_window)
         timer_1.start(10)
@@ -585,6 +595,7 @@ class TestExportDialog(TestMainWindow):
         createSqlBase(array=array, new=new)
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
+        self.ui.file_name = TEST_DB
         timer_1 = createClickTimer(self.ui.dialog)
         timer_2 = createClickTimer(self.ui.dialog.stat_window)
         timer_1.start(10)
@@ -608,6 +619,7 @@ class TestExportDialog(TestMainWindow):
         self.ui.kindle_radio.setChecked(True)
         self.ui.kindle_new_words_radio.setChecked(True)
         self.ui.kindle_path.setText(TEST_DB)
+        self.ui.file_name = TEST_DB
         timer_1 = createClickTimer(self.ui.dialog)
         timer_2 = createClickTimer(self.ui.dialog.stat_window)
         timer_1.start(10)
