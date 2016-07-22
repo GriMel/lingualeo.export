@@ -32,46 +32,6 @@ class TestLingualeo(unittest.TestCase):
 
     EMAIL = "b346059@trbvn.com"
     PASSWORD = "1234567890"
-    TEST_AUTH_INFO = \
-        {'address': 'Ukraine, Kyyiv, Kiev',
-         'age': 16,
-         'autologin_key': 'd3c12598553e65d50ba52e1abcb5c705',
-         'avatar': 'https://d144fqpiyasmrr.cloudfront.net/up'\
-                   'loads/avatar/0.png',
-         'avatar_mini': 'https://d144fqpiyasmrr.cloudfront.ne'\
-                        't/uploads/avatar/0s100.png',
-         'birth': '2000-01-01',
-         'create_at': '2016-02-19 20:33:54',
-         'daily_hours': 1,
-         'denied_services': [],
-         'fname': '',
-         'fullname': 'b346059',
-         'hungry_max_points': 150,
-         'hungry_pct': 0,
-         'hungry_points': 0,
-         'is_gold': False,
-         'lang_interface': 'ru',
-         'lang_native': 'ru',
-         'langlevel': 1,
-         'leo_pic_url': 'http://hwcdn.lingualeo.com' +
-                        '/8ac94ea62/images/tasks-leo-2.png',
-         'meatballs': 200,
-         'nickname': 'b346059',
-         'port_version': '1.6.1',
-         'premium_type': 0,
-         'premium_until': '',
-         'refcode': '9em5gg',
-         'sex': 1,
-         'sname': '',
-         'user_id': 13720532,
-         'words_cnt': 30,
-         'words_known': 0,
-         'xp_level': 1,
-         'xp_max_points': 25,
-         'xp_min_points': 0,
-         'xp_points': 0,
-         'xp_title': 'Ловкий новичок'}
-
     TEST_WORD_EXISTS = "book"
     TEST_TWORD_EXISTS = "книга"
     TEST_TWORD_EXISTS_TWO = "бронировать"
@@ -86,23 +46,12 @@ class TestLingualeo(unittest.TestCase):
         self.lingualeo.auth()
         self.maxDiff = None
 
-    def test_typical_auth_info(self):
-        """
-        Auth_info is equal to test auth info
-        """
-        premium_type = self.lingualeo.auth_info['premium_type']
-        fullname = self.lingualeo.auth_info['fullname']
-        xp_level = self.lingualeo.auth_info['xp_level']
-        self.assertEqual(premium_type, self.TEST_AUTH_INFO['premium_type'])
-        self.assertEqual(fullname, self.TEST_AUTH_INFO['fullname'])
-        self.assertEqual(xp_level, self.TEST_AUTH_INFO['xp_level'])
-
     def test_typical_get_translation_info(self):
         """
         Function get_translate returns predicted results
         """
         result = self.lingualeo.get_translate(self.TEST_WORD_EXISTS)
-        # Dictionary on Lingualeo has 'бронировать' for 'book' 
+        # Dictionary on Lingualeo has 'бронировать' for 'book'
         # The most popular translation, though, is 'книга'
         self.assertEqual(result,
                          {'is_exist': True,
@@ -111,7 +60,7 @@ class TestLingualeo(unittest.TestCase):
         result = self.lingualeo.get_translate(self.TEST_WORD_NON_EXISTS)
         self.assertEqual(result,
                          {'is_exist': False,
-                          'word':"zecrvt",
+                          'word': "zecrvt",
                           'tword': ""})
 
     def test_typical_add_word_info(self):
@@ -119,7 +68,7 @@ class TestLingualeo(unittest.TestCase):
         Function add_word returns predicted results
         """
         response = self.lingualeo.add_word(self.TEST_WORD_EXISTS,
-                                                self.TEST_TWORD_EXISTS)
+                                           self.TEST_TWORD_EXISTS)
         add_word_info = response.json()['is_new']
         self.assertEqual(0, add_word_info)
 
@@ -185,7 +134,7 @@ class TestKindleHandler(unittest.TestCase):
 
     def test_only_new_words(self):
         """
-        Reading test Kindle database with 'only_new_words' returns self.new_words
+        Reading test Kindle database with 'only_new_words' returns new_words
         """
         self.handler.read(only_new_words=True)
         words_count = len(self.handler.data)
