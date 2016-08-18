@@ -20,6 +20,6 @@ example
 * qm files located in src/lang
 * Automated script
 ```
-python compile.py ts ua  # to get qt_ua.ts editable file
-python compile.py qm ua  # to create qt_ua.qm from qt_ua.ts
+python language.py ts ua  # to get qt_ua.ts editable file
+python language.py qm ua  # to create qt_ua.qm from qt_ua.ts
 ```
